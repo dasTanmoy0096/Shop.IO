@@ -1,0 +1,31 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Sign up{% endblock %}
+
+{% block styles %}
+	<style>
+		input {
+			border: 2px solid gray;
+			border-radius: 4px;
+		}
+	</style>
+{% endblock %}
+
+
+{% block content %}
+	<h1 class="text-2xl">Sign up</h1>
+
+	<form method="post" action=".">
+		{% csrf_token %}
+
+		{{ form.as_p }}
+
+		<button class="py-4 px-8 bg-teal-800 text-white">Sign up</button>
+
+		<hr class="mt-4 mb-4">
+
+		<p class="py-4">Already an User? Login:</p>
+
+		<a href="{% url 'login' %}" class="py-4 px-8 bg-teal-800 text-white">Login</a>
+	</form>
+{% endblock %}

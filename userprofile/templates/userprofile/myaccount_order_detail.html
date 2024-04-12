@@ -1,0 +1,67 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Order Detail - {{ order.id }}{% endblock %}
+
+{% block content %}
+	<h1 class="mb-6 text-2xl">Order Detail - {{ order.id }}</h1>
+
+	<h2 class="mb-3 text-xl">My products bought in this order</h2>
+
+	<div class="px-4 py-4 mb-2 flex flex-wrap items-center">
+		<div class="w-1/5">
+			<strong>Image</strong>
+		</div>
+
+		<div class="w-1/5">
+			<strong>Title</strong>
+		</div>
+
+		<div class="w-1/5">
+			<strong>Individual Price</strong>
+		</div>
+
+		<div class="w-1/5">
+			<strong>Quantity</strong>
+		</div>
+
+		<div class="w-1/5">
+			<strong>Total Price</strong>
+		</div>
+	</div>
+
+	{% for item in order.items.all %}
+		{% if item.order.created_by == request.user %}
+			<div class="px-4 py-4 mb-2 bg-teal-100 flex flex-wrap items-center">
+				<div class="w-1/5">
+					<img src="{{ item.product.get_thumbnail }}" class="w-20">
+				</div>
+
+				<div class="w-1/5">
+					{{ item.product.title }}
+				</div>
+
+				<div class="w-1/5">
+					₹{{ item.product.get_display_price }}
+				</div>
+
+				<div class="w-1/5">
+					{{ item.quantity }}
+				</div>
+
+				<div class="w-1/5">
+					₹{{ item.get_display_price }}
+				</div>
+			</div>
+		{% endif %}
+	{% endfor %}
+
+	<hr class="mt-4 mb-4">
+
+	<h2 class="mb-3 text-xl">My entered details</h2>
+	<p><strong>First Name:</strong> {{ order.first_name }}</p>
+	<p><strong>Last Name:</strong> {{ order.last_name }}</p>
+	<p><strong>Address:</strong> {{ order.address }}</p>
+	<p><strong>Zipcode:</strong> {{ order.zipcode }}</p>
+	<p><strong>City:</strong> {{ order.city }}</p>
+	<p><strong>Paid Amount:</strong> ₹{{ order.get_display_price }}</p>
+{% endblock %}

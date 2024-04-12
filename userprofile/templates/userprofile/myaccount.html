@@ -1,0 +1,59 @@
+{% extends 'core/base.html' %}
+
+{% block title %}My account{% endblock %}
+
+{% block content %}
+	<h1 class="text-2xl">{{ name }}'s account panel</h1>
+
+	<h2 class="mt-6 text-xl">My bought items</h2>
+
+	<div class="px-4 py-4 mb-2 flex flex-wrap items-center">
+		<div class="w-1/5">
+			<strong>Image</strong>
+		</div>
+
+		<div class="w-1/5">
+			<strong>Order ID</strong>
+		</div>
+		
+		<div class="w-1/5">
+			<strong>Item</strong>
+		</div>
+
+		<div class="w-1/5">
+			<strong>Quantity</strong>
+		</div>
+
+		<div class="w-1/5">
+			<strong>Total Price</strong>
+		</div>
+	</div>
+
+	{% for order_item in ordered_items %}
+		<div class="px-4 py-4 mb-2 bg-teal-100 flex flex-wrap items-center">
+			<div class="w-1/5">
+				<a href="{% url 'myaccount_order_detail' order_item.order.id %}"><img src="{{ order_item.product.get_thumbnail }}" class="w-14"></a>
+			</div>
+
+			<div class="w-1/5">
+				{{ order_item.order.id }}
+			</div>
+
+			<div class="w-1/5">
+				{{ order_item.product.title }}
+			</div>
+
+			<div class="w-1/5">
+				{{ order_item.quantity }}
+			</div>
+
+			<div class="w-1/5">
+				₹{{ order_item.get_display_price }}
+			</div>
+		</div>
+	{% endfor %}
+
+	<hr class="mt-4 mb-4">
+	
+	<a href="{% url 'logout' %}" class="mt-6 inline-block py-4 px-8 bg-red-400 text-white">Log out</a>
+{% endblock %}

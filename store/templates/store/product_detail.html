@@ -1,0 +1,45 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ product.title }}{% endblock %}
+
+{% block meta %}
+	<meta name="description" content="{{ product.description }}">
+	<meta name="authot" content="Shop.Io Tanmoy">
+	<meta property="og:title" content="Shop.Io | {{ product.title }}">
+	<meta property="og:description" content="{{ product.description }}">
+	<meta property="og:type" content="article">
+	<meta property="og:url" content="http://ShopIo.com{% url 'product_detail' product.category.slug product.slug %}">
+	{% if product.image %}
+		<meta property="og:image" content="http://ShopIo.com{{ product.image.url }}">
+	{% endif %}
+{% endblock %}
+
+{% block content %}
+	{% if product.image %}
+		<div class="image mb-4">
+			<img src="{{ product.image.url }}" alt="Image of {{ product.title }}">
+		</div>
+	{% endif %}
+
+	<h1 class="text-2xl">{{ product.title }}</h1>
+
+	<p class="text-xs text-gray-500">
+		₹{{product.get_display_price }}
+		-
+		<a href="{% url 'vendor_detail' product.user.id %}">{% firstof product.user.get_full_name product.user.username %}</a>
+	</p>
+
+	{% if product.description %}
+		<p class="mt-4">
+			{{ product.description }}
+		</p>
+	{% endif %}
+
+	<hr class="mt-4 mb-4">
+
+	{% if request.user.is_authenticated and product.user != request.user %}
+		<a href="{% url 'add_to_cart' product.id %}" class="inline-block px-8 py-4 bg-teal-500 text-white">Add to cart</a>
+	{% elif request.user.is_authenticated and product.user == request.user %}
+		<p class="inline-block px-8 py-4 bg-red-500 text-white">This your own product, cannot add to cart</p>
+	{% endif %}
+{% endblock %}
