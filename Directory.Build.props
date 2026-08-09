@@ -1,0 +1,35 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <UseSharedCompilation>true</UseSharedCompilation>
+
+    <BuildInParallel>true</BuildInParallel>
+    <RestoreDisableParallel>false</RestoreDisableParallel>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AddTransitiveProjectReferencesInStaticGraph>true</AddTransitiveProjectReferencesInStaticGraph>
+
+    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+    <RestoreUseLegacyDependencyResolver>false</RestoreUseLegacyDependencyResolver>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RootNamespace>$(MSBuildProjectName)</RootNamespace>
+
+    <OutputType>Exe</OutputType>
+    <StartupObject>$(RootNamespace).Program</StartupObject>
+
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+</Project>

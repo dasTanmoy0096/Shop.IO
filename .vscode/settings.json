@@ -1,0 +1,78 @@
+{
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "modificationsIfAvailable",
+  "editor.formatOnType": true,
+
+
+  "[csharp]": {
+    "editor.defaultFormatter": "ms-dotnettools.csharp",
+  },
+  "csharp.format.enable": true,
+  "dotnet.formatting.organizeImportsOnFormat": true,
+
+
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+  },
+  "json.format.enable": true,
+  "json.format.keepLines": true,
+
+
+  "[typescript]": {
+    "editor.defaultFormatter": "TypeScriptTeam.native-preview",
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "TypeScriptTeam.native-preview",
+  },
+  "js/ts.experimental.useTsgo": true,
+  "js/ts.format.enabled": true,
+  "js/ts.format.indentSwitchCase": true,
+  "js/ts.format.insertSpaceAfterCommaDelimiter": true,
+  "js/ts.format.insertSpaceAfterConstructor": false,
+  "js/ts.format.insertSpaceAfterFunctionKeywordForAnonymousFunctions": false,
+  "js/ts.format.insertSpaceAfterKeywordsInControlFlowStatements": true,
+  "js/ts.format.insertSpaceAfterOpeningAndBeforeClosingEmptyBraces": true,
+  "js/ts.format.insertSpaceAfterOpeningAndBeforeClosingJsxExpressionBraces": true,
+  "js/ts.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": true,
+  "js/ts.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBrackets": true,
+  "js/ts.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis": false,
+  "js/ts.format.insertSpaceAfterOpeningAndBeforeClosingTemplateStringBraces": false,
+  "js/ts.format.insertSpaceAfterSemicolonInForStatements": true,
+  "js/ts.format.insertSpaceAfterTypeAssertion": false,
+  "js/ts.format.insertSpaceBeforeAndAfterBinaryOperators": true,
+  "js/ts.format.insertSpaceBeforeFunctionParenthesis": false,
+  "js/ts.format.placeOpenBraceOnNewLineForControlBlocks": false,
+  "js/ts.format.placeOpenBraceOnNewLineForFunctions": false,
+  "js/ts.format.semicolons": "insert",
+
+
+  "[css]": {
+    "editor.defaultFormatter": "vscode.css-language-features",
+  },
+  "css.format.enable": true,
+  "css.format.braceStyle": "collapse",
+  "css.format.maxPreserveNewLines": null,
+  "css.format.newlineBetweenRules": true,
+  "css.format.newlineBetweenSelectors": false,
+  "css.format.preserveNewLines": true,
+  "css.format.spaceAroundSelectorSeparator": true,
+
+
+  "[html]": {
+    "editor.defaultFormatter": "vscode.html-language-features",
+  },
+  "html.format.enable": true,
+  "html.format.contentUnformatted": null,
+  "html.format.extraLiners": null,
+  "html.format.indentHandlebars": true,
+  "html.format.indentInnerHtml": true,
+  "html.format.maxPreserveNewLines": null,
+  "html.format.preserveNewLines": true,
+  "html.format.templating": true,
+  "html.format.unformatted": null,
+  "html.format.unformattedContentDelimiter": "",
+  "html.format.wrapAttributes": "preserve-aligned",
+  "html.format.wrapAttributesIndentSize": null,
+  "html.format.wrapLineLength": 0,
+}

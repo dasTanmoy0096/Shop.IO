@@ -1,0 +1,7 @@
+-nodeReuse:True
+-graphBuild:True
+-multiThreaded:True
+-maxCpuCount:16
+-p:AddTransitiveProjectReferencesInStaticGraph=true
+-p:RestoreUseStaticGraphEvaluation=true
+-p:RestoreUseLegacyDependencyResolver=false

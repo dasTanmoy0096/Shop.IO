@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <PackageReference Include="MySqlConnector">
+      <PrivateAssets>compile;contentfiles;analyzers;build</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

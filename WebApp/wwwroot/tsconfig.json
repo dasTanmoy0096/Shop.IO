@@ -1,0 +1,56 @@
+{
+  "compilerOptions": {
+    "rootDir": "./typescript-root",
+    "outDir": "./scripts",
+
+    "checkJs": true,
+    "experimentalDecorators": false,
+    "module": "ESNext",
+    "strict": true,
+    "strictFunctionTypes": true,
+    "strictNullChecks": true,
+    "target": "ESNext",
+
+    "moduleResolution": "bundler",
+    "lib": [
+      "ESNext",
+      "DOM",
+    ],
+    "types": [ ],
+
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+
+    // "allowUnreachableCode": false,
+    // "allowUnusedLabels": false,
+
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
+
+    "sourceMap": true,
+    "declaration": false,
+    "declarationMap": false,
+
+    "noEmitOnError": true,
+    "skipLibCheck": false
+  },
+
+  "include": [
+    "typescript-root/**/*.ts"
+  ],
+
+  "exclude": [
+    "scripts",
+    "node_modules"
+  ]
+}

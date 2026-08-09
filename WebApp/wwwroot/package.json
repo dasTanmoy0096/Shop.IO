@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "jspm": "^4.6.1",
+    "typescript": "^7.0.2"
+  },
+  "name": "wwwroot",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "exports": {
+    ".": "./scripts/pages/index.js"
+  }
+}
