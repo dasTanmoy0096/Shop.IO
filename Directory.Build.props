@@ -19,13 +19,9 @@
 
   <PropertyGroup>
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
-
-    <OutputType>Exe</OutputType>
-    <StartupObject>$(RootNamespace).Program</StartupObject>
-
     <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>enable</Nullable>
 
+    <Nullable>enable</Nullable>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 

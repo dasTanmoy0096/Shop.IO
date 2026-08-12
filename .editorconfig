@@ -12,7 +12,7 @@ trim_trailing_whitespace = true
 [*.{html,css,json}]
 indent_size = 2
 
-[*.{csproj,props,targets,slnx}]
+[*.{xml,config,csproj,props,targets,slnx}]
 indent_size = 2
 
 [*.cs]

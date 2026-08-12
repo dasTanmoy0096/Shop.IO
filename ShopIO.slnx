@@ -1,4 +1,8 @@
 <Solution>
-  <Project Path="WebApi/WebApi.csproj" />
+  <Folder Name="/WebApi/">
+    <Project Path="WebApi/DataAccess/DataAccess.csproj" />
+    <Project Path="WebApi/WebApi/WebApi.csproj" />
+  </Folder>
+
   <Project Path="WebApp/WebApp.csproj" />
 </Solution>

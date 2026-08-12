@@ -5,7 +5,6 @@
   },
   "name": "wwwroot",
   "version": "1.0.0",
-  "description": "",
   "type": "module",
   "exports": {
     ".": "./scripts/pages/index.js"

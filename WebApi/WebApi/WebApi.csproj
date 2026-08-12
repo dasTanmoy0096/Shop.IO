@@ -8,5 +8,9 @@
     <PackageReference Include="NLog.Web.AspNetCore">
       <PrivateAssets>compile;contentfiles;analyzers;build</PrivateAssets>
     </PackageReference>
+
+    <ProjectReference Include="../DataAccess/DataAccess.csproj">
+      <PrivateAssets>compile;contentfiles;analyzers;build</PrivateAssets>
+    </ProjectReference>
   </ItemGroup>
 </Project>
