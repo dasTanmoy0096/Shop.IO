@@ -19,6 +19,8 @@ documentation:
 8. [CREATE DATABASE](https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-database), [CREATE USER](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/create-user), [ALTER USER](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/alter-user), and [GRANT](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/grant)
 9. [CREATE TABLE](https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-table), [constraints](https://mariadb.com/docs/server/reference/sql-statements/data-definition/constraint), and [foreign keys](https://mariadb.com/docs/server/architecture/server-constraints/foreign-key-constraints)
 10. [`START TRANSACTION` and `COMMIT`](https://mariadb.com/docs/server/reference/sql-statements/transactions/start-transaction)
+11. [Information Schema](https://mariadb.com/docs/server/reference/system-tables/information-schema), [table constraints](https://mariadb.com/docs/server/reference/system-tables/information-schema/information-schema-tables/information-schema-table_constraints-table), [foreign-key metadata](https://mariadb.com/docs/server/reference/system-tables/information-schema/information-schema-tables/information-schema-referential_constraints-table), and [index metadata](https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/system-tables/information-schema/information-schema-statistics-table)
+12. [Compound statements outside stored programs](https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/using-compound-statements-outside-of-stored-programs) and [`SIGNAL`](https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/signal)
 
 ## Local Development Credentials
 
@@ -192,6 +194,20 @@ Bash/zsh:
 
 ```bash
 mariadb --host=127.0.0.1 --port=5024 --user=shopio_migrator --password=shopio_local_migrator --database=shop_io < "./Database/Seed/01-reference-data.sql"
+```
+
+### 6. Verify the Initial Schema and Reference Data
+
+PowerShell Core:
+
+```powershell
+Get-Content "./Database/Verification/01-verify-initial-state.sql" | mariadb --host=127.0.0.1 --port=5024 --user=shopio_migrator --password=shopio_local_migrator --database=shop_io
+```
+
+Bash/zsh:
+
+```bash
+mariadb --host=127.0.0.1 --port=5024 --user=shopio_migrator --password=shopio_local_migrator --database=shop_io < "./Database/Verification/01-verify-initial-state.sql"
 ```
 
 Verify the database and grants.
