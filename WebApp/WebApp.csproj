@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <StartupObject>$(RootNamespace).Program</StartupObject>
+    <UserSecretsId>45d40908-1b04-40d0-ae74-ce54197ca00f</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
