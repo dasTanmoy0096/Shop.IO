@@ -18,6 +18,7 @@ documentation:
 7. [Server system variables](https://mariadb.com/docs/server/server-management/variables-and-modes/server-system-variables)
 8. [CREATE DATABASE](https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-database), [CREATE USER](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/create-user), [ALTER USER](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/alter-user), and [GRANT](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/grant)
 9. [CREATE TABLE](https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-table), [constraints](https://mariadb.com/docs/server/reference/sql-statements/data-definition/constraint), and [foreign keys](https://mariadb.com/docs/server/architecture/server-constraints/foreign-key-constraints)
+10. [`START TRANSACTION` and `COMMIT`](https://mariadb.com/docs/server/reference/sql-statements/transactions/start-transaction)
 
 ## Local Development Credentials
 
@@ -177,6 +178,20 @@ Bash/zsh:
 
 ```bash
 mariadb --host=127.0.0.1 --port=5024 --user=shopio_migrator --password=shopio_local_migrator --database=shop_io < "./Database/Schema/01-initial-schema.sql"
+```
+
+### 5. Seed Reference Data
+
+PowerShell Core:
+
+```powershell
+Get-Content "./Database/Seed/01-reference-data.sql" | mariadb --host=127.0.0.1 --port=5024 --user=shopio_migrator --password=shopio_local_migrator --database=shop_io
+```
+
+Bash/zsh:
+
+```bash
+mariadb --host=127.0.0.1 --port=5024 --user=shopio_migrator --password=shopio_local_migrator --database=shop_io < "./Database/Seed/01-reference-data.sql"
 ```
 
 Verify the database and grants.
