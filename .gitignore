@@ -1,6 +1,5 @@
 obj/
 bin/
 node_modules/
-scripts/
-package-lock.json
-importmap.js
+WebApp/wwwroot/scripts/
+WebApp/wwwroot/importmap.js

@@ -6,6 +6,12 @@
   "name": "wwwroot",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "build": "tsc --project tsconfig.json",
+    "watch": "tsc --project tsconfig.json --watch --preserveWatchOutput",
+    "generate:importmap": "npm run build && jspm install --map importmap.json --out importmap.json && jspm install --map importmap.json --out importmap.js --integrity"
+  },
   "exports": {
     ".": "./scripts/pages/index.js"
   }
