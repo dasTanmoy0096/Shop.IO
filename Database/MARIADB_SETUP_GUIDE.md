@@ -17,6 +17,7 @@ documentation:
 6. [MariaDB option files](https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files)
 7. [Server system variables](https://mariadb.com/docs/server/server-management/variables-and-modes/server-system-variables)
 8. [CREATE DATABASE](https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-database), [CREATE USER](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/create-user), [ALTER USER](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/alter-user), and [GRANT](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/grant)
+9. [CREATE TABLE](https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-table), [constraints](https://mariadb.com/docs/server/reference/sql-statements/data-definition/constraint), and [foreign keys](https://mariadb.com/docs/server/architecture/server-constraints/foreign-key-constraints)
 
 ## Local Development Credentials
 
@@ -109,7 +110,7 @@ Open a second terminal and check that MariaDB is running.
 PowerShell Core on Windows:
 
 ```powershell
-mariadb-admin --host=localhost --port=5024 --user=root --password=shopio_local_root ping
+mariadb-admin --host=127.0.0.1 --port=5024 --user=root --password=shopio_local_root ping
 ```
 
 Bash/zsh on Unix-like systems:
@@ -120,14 +121,14 @@ sudo mariadb-admin --defaults-file="../Database/my.ini" --user=root ping
 
 ## E. Execute Bootstrap, Schema, Seed, Migration, and Verification Scripts
 
-Run the following bootstrap files in this order.
+Run the following SQL files in this order.
 
 ### 1. Create the Local TCP Root Account
 
 PowerShell Core on Windows:
 
 ```powershell
-Get-Content "./Database/Bootstrap/00-create-root-tcp-account.sql" | mariadb --host=localhost --port=5024 --user=root --password=shopio_local_root
+Get-Content "./Database/Bootstrap/00-create-root-tcp-account.sql" | mariadb --host=127.0.0.1 --port=5024 --user=root --password=shopio_local_root
 ```
 
 Bash/zsh on Unix-like systems:
@@ -141,7 +142,7 @@ sudo mariadb --defaults-file="../Database/my.ini" --user=root < "./Database/Boot
 PowerShell Core:
 
 ```powershell
-Get-Content "./Database/Bootstrap/01-create-database.sql" | mariadb --host=localhost --port=5024 --user=root --password=shopio_local_root
+Get-Content "./Database/Bootstrap/01-create-database.sql" | mariadb --host=127.0.0.1 --port=5024 --user=root --password=shopio_local_root
 ```
 
 Bash/zsh:
@@ -155,7 +156,7 @@ mariadb --host=127.0.0.1 --port=5024 --user=root --password=shopio_local_root < 
 PowerShell Core:
 
 ```powershell
-Get-Content "./Database/Bootstrap/02-create-principals.sql" | mariadb --host=localhost --port=5024 --user=root --password=shopio_local_root
+Get-Content "./Database/Bootstrap/02-create-principals.sql" | mariadb --host=127.0.0.1 --port=5024 --user=root --password=shopio_local_root
 ```
 
 Bash/zsh:
@@ -164,15 +165,28 @@ Bash/zsh:
 mariadb --host=127.0.0.1 --port=5024 --user=root --password=shopio_local_root < "./Database/Bootstrap/02-create-principals.sql"
 ```
 
+### 4. Create the Initial Schema
+
+PowerShell Core:
+
+```powershell
+Get-Content "./Database/Schema/01-initial-schema.sql" | mariadb --host=127.0.0.1 --port=5024 --user=shopio_migrator --password=shopio_local_migrator --database=shop_io
+```
+
+Bash/zsh:
+
+```bash
+mariadb --host=127.0.0.1 --port=5024 --user=shopio_migrator --password=shopio_local_migrator --database=shop_io < "./Database/Schema/01-initial-schema.sql"
+```
+
 Verify the database and grants.
 
 ```text
 mariadb --host=127.0.0.1 --port=5024 --user=root --password=shopio_local_root --execute="SHOW DATABASES LIKE 'shop_io'; SHOW GRANTS FOR 'shopio_migrator'@'127.0.0.1'; SHOW GRANTS FOR 'shopio_runtime'@'127.0.0.1';"
 ```
 
-Add the exact command for each new schema, seed, migration, or verification SQL
-file to this section when that file is added. Use `shopio_migrator`; do not use
-`shopio_runtime` to execute SQL scripts.
+Use `shopio_migrator` for schema, seed, migration, and verification scripts.
+Do not use `shopio_runtime` to execute SQL scripts.
 
 ## F. Stop the Server
 
