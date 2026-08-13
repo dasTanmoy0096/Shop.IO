@@ -1,14 +1,9 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <MicrosoftExtensionsVersion>$([System.Environment]::Version.ToString(3))</MicrosoftExtensionsVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
-
     <PackageVersion Include="NLog.Web.AspNetCore" Version="6.1.4" />
     <PackageVersion Include="MySqlConnector" Version="2.6.1" />
   </ItemGroup>
