@@ -1,8 +1,10 @@
 namespace DataAccess;
 
 using System;
+using System.Data.Common;
 
 using DataAccess.Configuration;
+using DataAccess.Internals;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,7 +13,13 @@ public static class DataAccessServiceCollectionExtensions {
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<MariaDbConnectionConfigurationValidator>();
-        services.AddHostedService<MariaDbConfigurationValidationHostedService>();
+        services.AddSingleton<MariaDbDataSourceFactory>();
+        services.AddSingleton<DbDataSource>(
+            static serviceProvider => serviceProvider
+                .GetRequiredService<MariaDbDataSourceFactory>()
+                .Build()
+        );
+        services.AddHostedService<MariaDbDataSourceStartupGateHostedService>();
 
         return services;
     }

@@ -12,8 +12,7 @@ using MySqlConnector;
 internal sealed class MariaDbConnectionConfigurationValidator {
     private const string MariaDbConfigurationSectionPath = "DataAccess:MariaDb";
     private const string DataSourceNameConfigurationKey = "DataSourceName";
-    private const string DataSourceNameConfigurationPath =
-        $"{MariaDbConfigurationSectionPath}:{DataSourceNameConfigurationKey}";
+    private const string DataSourceNameConfigurationPath = $"{MariaDbConfigurationSectionPath}:{DataSourceNameConfigurationKey}";
 
     private readonly record struct MariaDbConnectionOptionDefinition(
         string ConfigurationKey,
@@ -84,21 +83,17 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         "OldGuids",
     ];
 
-    private readonly IConfiguration configuration;
     private readonly IHostEnvironment hostEnvironment;
 
-    internal MariaDbConnectionConfigurationValidator(
-        IConfiguration configuration,
-        IHostEnvironment hostEnvironment
-    ) {
-        ArgumentNullException.ThrowIfNull(configuration);
+    public MariaDbConnectionConfigurationValidator(IHostEnvironment hostEnvironment) {
         ArgumentNullException.ThrowIfNull(hostEnvironment);
 
-        this.configuration = configuration;
         this.hostEnvironment = hostEnvironment;
     }
 
-    internal MariaDbConnectionSettings Validate() {
+    internal MariaDbConnectionSettings Validate(IConfiguration configuration) {
+        ArgumentNullException.ThrowIfNull(configuration);
+
         string dataSourceName = configuration[ DataSourceNameConfigurationPath ]?.Trim() ?? string.Empty;
         List<string> errors = [];
 
@@ -106,13 +101,16 @@ internal sealed class MariaDbConnectionConfigurationValidator {
             errors.Add($"{DataSourceNameConfigurationPath} must be a non-empty value.");
         }
 
-        ValidateConfigurationKeys(errors);
+        ValidateConfigurationKeys(
+            configuration,
+            errors
+        );
 
         MySqlConnectionStringBuilder connectionStringBuilder = [];
 
-        foreach (MariaDbConnectionOptionDefinition connectionOptionDefinition
-            in connectionOptionDefinitions) {
+        foreach (MariaDbConnectionOptionDefinition connectionOptionDefinition in connectionOptionDefinitions) {
             ApplyConnectionOption(
+                configuration,
                 connectionStringBuilder,
                 connectionOptionDefinition,
                 errors
@@ -121,6 +119,7 @@ internal sealed class MariaDbConnectionConfigurationValidator {
 
         ValidateConnectionOptionPolicy(
             connectionStringBuilder,
+            configuration,
             errors
         );
 
@@ -132,40 +131,66 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         );
     }
 
-    private void ValidateConfigurationKeys(List<string> errors) {
-        IConfigurationSection mariaDbConfigurationSection =
-            configuration.GetSection(MariaDbConfigurationSectionPath);
+    private static void ValidateConfigurationKeys(
+        IConfiguration configuration,
+        List<string> errors
+    ) {
+        IConfigurationSection mariaDbConfigurationSection = configuration.GetSection(MariaDbConfigurationSectionPath);
 
-        foreach (IConfigurationSection childConfigurationSection
-            in mariaDbConfigurationSection.GetChildren()) {
+        foreach (IConfigurationSection childConfigurationSection in mariaDbConfigurationSection.GetChildren()) {
             if (!IsKnownConfigurationKey(childConfigurationSection.Key)) {
-                errors.Add(
-                    $"{MariaDbConfigurationSectionPath}:{childConfigurationSection.Key} is not a supported MariaDB configuration key."
-                );
+                errors.Add($"{MariaDbConfigurationSectionPath}:{childConfigurationSection.Key} is not a supported MariaDB configuration key.");
             }
         }
 
         foreach (string prohibitedConfigurationKey in prohibitedConfigurationKeys) {
-            string configurationPath = GetConnectionOptionConfigurationPath(
-                prohibitedConfigurationKey
-            );
+            string prohibitedConfigurationPath = GetConnectionOptionConfigurationPath(prohibitedConfigurationKey);
 
-            if (configuration[ configurationPath ] is not null) {
-                errors.Add(
-                    $"{configurationPath} is not permitted by the Shop.IO MariaDB configuration contract."
-                );
+            if (configuration[ prohibitedConfigurationPath ] is not null) {
+                errors.Add($"{prohibitedConfigurationPath} is not permitted by the Shop.IO MariaDB configuration contract.");
             }
         }
     }
 
-    private void ApplyConnectionOption(
+    private static bool IsKnownConfigurationKey(string configurationKey) {
+        if (string.Equals(
+            configurationKey,
+            DataSourceNameConfigurationKey,
+            StringComparison.Ordinal
+        )) {
+            return true;
+        }
+
+        foreach (MariaDbConnectionOptionDefinition connectionOptionDefinition in connectionOptionDefinitions) {
+            if (string.Equals(
+                configurationKey,
+                connectionOptionDefinition.ConfigurationKey,
+                StringComparison.Ordinal
+            )) {
+                return true;
+            }
+        }
+
+        foreach (string prohibitedConfigurationKey in prohibitedConfigurationKeys) {
+            if (string.Equals(
+                configurationKey,
+                prohibitedConfigurationKey,
+                StringComparison.Ordinal
+            )) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void ApplyConnectionOption(
+        IConfiguration configuration,
         MySqlConnectionStringBuilder connectionStringBuilder,
         MariaDbConnectionOptionDefinition connectionOptionDefinition,
         List<string> errors
     ) {
-        string configurationPath = GetConnectionOptionConfigurationPath(
-            connectionOptionDefinition.ConfigurationKey
-        );
+        string configurationPath = GetConnectionOptionConfigurationPath(connectionOptionDefinition.ConfigurationKey);
         string? configuredValue = configuration[ configurationPath ];
 
         if (configuredValue is null) {
@@ -195,6 +220,7 @@ internal sealed class MariaDbConnectionConfigurationValidator {
 
     private void ValidateConnectionOptionPolicy(
         MySqlConnectionStringBuilder connectionStringBuilder,
+        IConfiguration configuration,
         List<string> errors
     ) {
         ValidateServerPlaceholder(
@@ -208,17 +234,18 @@ internal sealed class MariaDbConnectionConfigurationValidator {
             ushort.MaxValue,
             errors
         );
-        ValidateExpectedOptionValue(
+        ValidateConnectionProtocol(
             connectionStringBuilder,
-            "ConnectionProtocol",
-            "Socket",
             errors
         );
         ValidateSslMode(
             connectionStringBuilder,
             errors
         );
-        ValidateCertificateConfiguration(errors);
+        ValidateCertificateConfiguration(
+            configuration,
+            errors
+        );
         ValidateExpectedOptionValue(
             connectionStringBuilder,
             "CertificateStoreLocation",
@@ -371,10 +398,30 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         );
     }
 
+    private static void ValidateExpectedOptionValue(
+        MySqlConnectionStringBuilder connectionStringBuilder,
+        string connectionOptionKey,
+        string expectedValue,
+        List<string> errors
+    ) {
+        string actualValue = GetConnectionOptionValue(
+            connectionStringBuilder,
+            connectionOptionKey
+        );
+
+        if (!string.Equals(
+            actualValue,
+            expectedValue,
+            StringComparison.OrdinalIgnoreCase
+        )) {
+            errors.Add($"{GetConnectionOptionConfigurationPath(connectionOptionKey)} must be {expectedValue}.");
+        }
+    }
+
     private void ValidateServerPlaceholder(
             MySqlConnectionStringBuilder connectionStringBuilder,
             List<string> errors
-        ) {
+    ) {
         if (hostEnvironment.IsDevelopment()) {
             return;
         }
@@ -385,9 +432,7 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         );
 
         if (server.EndsWith(".example.invalid", StringComparison.OrdinalIgnoreCase)) {
-            errors.Add(
-                $"{GetConnectionOptionConfigurationPath("Server")} must override the source-controlled placeholder outside Development."
-            );
+            errors.Add($"{GetConnectionOptionConfigurationPath("Server")} must override the source-controlled placeholder outside Development.");
         }
     }
 
@@ -401,143 +446,31 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         );
 
         if (hostEnvironment.IsDevelopment()) {
-            if (string.Equals(sslMode, "Preferred", StringComparison.OrdinalIgnoreCase)) {
-                errors.Add(
-                    $"{GetConnectionOptionConfigurationPath("SslMode")} must not use Preferred in Development."
-                );
+            if (string.Equals(
+                sslMode,
+                "Preferred",
+                StringComparison.OrdinalIgnoreCase
+            )) {
+                errors.Add($"{GetConnectionOptionConfigurationPath("SslMode")} must not use Preferred in Development.");
             }
             return;
         }
 
-        if (!string.Equals(sslMode, "VerifyFull", StringComparison.OrdinalIgnoreCase)) {
-            errors.Add(
-                $"{GetConnectionOptionConfigurationPath("SslMode")} must use VerifyFull outside Development."
-            );
+        if (!string.Equals(
+            sslMode,
+            "VerifyFull",
+            StringComparison.OrdinalIgnoreCase
+        )) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("SslMode")} must use VerifyFull outside Development.");
         }
     }
 
-    private void ValidateCertificateConfiguration(List<string> errors) {
-        string certificateFile = GetConfigurationValue("CertificateFile");
-        string certificatePassword = GetConfigurationValue("CertificatePassword");
-        string sslCert = GetConfigurationValue("SslCert");
-        string sslKey = GetConfigurationValue("SslKey");
-        string certificateThumbprint = GetConfigurationValue("CertificateThumbprint");
-
-        if (!string.IsNullOrWhiteSpace(certificateFile)
-            && (!string.IsNullOrWhiteSpace(sslCert) || !string.IsNullOrWhiteSpace(sslKey))) {
-            errors.Add(
-                $"{GetConnectionOptionConfigurationPath("CertificateFile")}, {GetConnectionOptionConfigurationPath("SslCert")}, and {GetConnectionOptionConfigurationPath("SslKey")} must not configure both PKCS #12 and PEM client certificates."
-            );
-        }
-
-        if (string.IsNullOrWhiteSpace(sslCert) != string.IsNullOrWhiteSpace(sslKey)) {
-            errors.Add(
-                $"{GetConnectionOptionConfigurationPath("SslCert")} and {GetConnectionOptionConfigurationPath("SslKey")} must be supplied together."
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(certificatePassword)
-            && string.IsNullOrWhiteSpace(certificateFile)) {
-            errors.Add(
-                $"{GetConnectionOptionConfigurationPath("CertificatePassword")} requires CertificateFile."
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(certificateThumbprint)) {
-            errors.Add(
-                $"{GetConnectionOptionConfigurationPath("CertificateThumbprint")} requires a certificate-store topology, which is not cross-platform."
-            );
-        }
-    }
-
-    private string GetConfigurationValue(string connectionOptionKey) {
-        return configuration[
-            GetConnectionOptionConfigurationPath(connectionOptionKey)
-        ] ?? string.Empty;
-    }
-
-    private static bool IsKnownConfigurationKey(string configurationKey) {
-        if (string.Equals(
-                configurationKey,
-                DataSourceNameConfigurationKey,
-                StringComparison.Ordinal
-            )) {
-            return true;
-        }
-
-        foreach (MariaDbConnectionOptionDefinition connectionOptionDefinition
-            in connectionOptionDefinitions) {
-            if (string.Equals(
-                    configurationKey,
-                    connectionOptionDefinition.ConfigurationKey,
-                    StringComparison.Ordinal
-                )) {
-                return true;
-            }
-        }
-
-        foreach (string prohibitedConfigurationKey in prohibitedConfigurationKeys) {
-            if (string.Equals(
-                    configurationKey,
-                    prohibitedConfigurationKey,
-                    StringComparison.Ordinal
-                )) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static void ValidateExpectedOptionValue(
+    private static void ValidateConnectionProtocol(
         MySqlConnectionStringBuilder connectionStringBuilder,
-        string connectionOptionKey,
-        string expectedValue,
         List<string> errors
     ) {
-        string actualValue = GetConnectionOptionValue(
-            connectionStringBuilder,
-            connectionOptionKey
-        );
-
-        if (!string.Equals(actualValue, expectedValue, StringComparison.OrdinalIgnoreCase)) {
-            errors.Add(
-                $"{GetConnectionOptionConfigurationPath(connectionOptionKey)} must be {expectedValue}."
-            );
-        }
-    }
-
-    private static void ValidatePositiveUInt32(
-        MySqlConnectionStringBuilder connectionStringBuilder,
-        string connectionOptionKey,
-        List<string> errors
-    ) {
-        if (!TryGetUInt32(
-                connectionStringBuilder,
-                connectionOptionKey,
-                out uint value
-            ) || value == 0) {
-            errors.Add(
-                $"{GetConnectionOptionConfigurationPath(connectionOptionKey)} must be greater than zero."
-            );
-        }
-    }
-
-    private static void ValidateUInt32Range(
-        MySqlConnectionStringBuilder connectionStringBuilder,
-        string connectionOptionKey,
-        uint minimumValue,
-        uint maximumValue,
-        List<string> errors
-    ) {
-        if (!TryGetUInt32(
-                connectionStringBuilder,
-                connectionOptionKey,
-                out uint value
-            ) || value < minimumValue || value > maximumValue) {
-            errors.Add(
-                $"{GetConnectionOptionConfigurationPath(connectionOptionKey)} must be from {minimumValue} through {maximumValue}."
-            );
+        if (connectionStringBuilder.ConnectionProtocol != MySqlConnectionProtocol.Sockets) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("ConnectionProtocol")} must select the cross-platform TCP/IP Socket protocol.");
         }
     }
 
@@ -558,18 +491,111 @@ internal sealed class MariaDbConnectionConfigurationValidator {
 
         if (!hasMinimumPoolSize || !hasMaximumPoolSize
             || maximumPoolSize == 0
-            || minimumPoolSize > maximumPoolSize) {
-            errors.Add(
-                $"{GetConnectionOptionConfigurationPath("MinimumPoolSize")} and {GetConnectionOptionConfigurationPath("MaximumPoolSize")} must define valid pool bounds."
-            );
+            || minimumPoolSize > maximumPoolSize
+        ) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("MinimumPoolSize")} and {GetConnectionOptionConfigurationPath("MaximumPoolSize")} must define valid pool bounds.");
         }
     }
 
-    private static bool TryGetUInt32(
-            MySqlConnectionStringBuilder connectionStringBuilder,
-            string connectionOptionKey,
+    private static void ValidatePositiveUInt32(
+        MySqlConnectionStringBuilder connectionStringBuilder,
+        string connectionOptionKey,
+        List<string> errors
+    ) {
+        if (!TryGetUInt32(
+            connectionStringBuilder,
+            connectionOptionKey,
             out uint value
-        ) {
+        ) || value == 0) {
+            errors.Add($"{GetConnectionOptionConfigurationPath(connectionOptionKey)} must be greater than zero.");
+        }
+    }
+
+    private static void ValidateUInt32Range(
+        MySqlConnectionStringBuilder connectionStringBuilder,
+        string connectionOptionKey,
+        uint minimumValue,
+        uint maximumValue,
+        List<string> errors
+    ) {
+        if (!TryGetUInt32(
+            connectionStringBuilder,
+            connectionOptionKey,
+            out uint value
+        ) || value < minimumValue || value > maximumValue) {
+            errors.Add($"{GetConnectionOptionConfigurationPath(connectionOptionKey)} must be from {minimumValue} through {maximumValue}.");
+        }
+    }
+
+    private static void ValidateCertificateConfiguration(
+        IConfiguration configuration,
+        List<string> errors
+    ) {
+        string certificateFile = GetConfigurationValue(
+            configuration,
+            "CertificateFile"
+        );
+        string certificatePassword = GetConfigurationValue(
+            configuration,
+            "CertificatePassword"
+        );
+        string certificateThumbprint = GetConfigurationValue(
+            configuration,
+            "CertificateThumbprint"
+        );
+        string sslCert = GetConfigurationValue(
+            configuration,
+            "SslCert"
+        );
+        string sslKey = GetConfigurationValue(
+            configuration,
+            "SslKey"
+        );
+
+        if (!string.IsNullOrWhiteSpace(certificateFile)
+            && (!string.IsNullOrWhiteSpace(sslCert) || !string.IsNullOrWhiteSpace(sslKey))) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("CertificateFile")}, {GetConnectionOptionConfigurationPath("SslCert")}, and {GetConnectionOptionConfigurationPath("SslKey")} must not configure both PKCS #12 and PEM client certificates.");
+        }
+
+        if (string.IsNullOrWhiteSpace(sslCert) != string.IsNullOrWhiteSpace(sslKey)) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("SslCert")} and {GetConnectionOptionConfigurationPath("SslKey")} must be supplied together.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(certificatePassword) && string.IsNullOrWhiteSpace(certificateFile)) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("CertificatePassword")} requires CertificateFile.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(certificateThumbprint)) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("CertificateThumbprint")} requires a certificate-store topology, which is not cross-platform.");
+        }
+    }
+
+    private static string GetConfigurationValue(
+        IConfiguration configuration,
+        string connectionOptionKey
+    ) {
+        return configuration[ GetConnectionOptionConfigurationPath(connectionOptionKey) ] ?? string.Empty;
+    }
+
+    private static string GetConnectionOptionConfigurationPath(string connectionOptionKey) {
+        return $"{MariaDbConfigurationSectionPath}:{connectionOptionKey}";
+    }
+
+    private static string GetConnectionOptionValue(
+        MySqlConnectionStringBuilder connectionStringBuilder,
+        string connectionOptionKey
+    ) {
+        return Convert.ToString(
+            connectionStringBuilder[ connectionOptionKey ],
+            CultureInfo.InvariantCulture
+        ) ?? string.Empty;
+    }
+
+    private static bool TryGetUInt32(
+        MySqlConnectionStringBuilder connectionStringBuilder,
+        string connectionOptionKey,
+        out uint value
+    ) {
         try {
             value = Convert.ToUInt32(
                 connectionStringBuilder[ connectionOptionKey ],
@@ -588,25 +614,9 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         }
     }
 
-    private static string GetConnectionOptionConfigurationPath(string connectionOptionKey) {
-        return $"{MariaDbConfigurationSectionPath}:{connectionOptionKey}";
-    }
-
-    private static string GetConnectionOptionValue(
-        MySqlConnectionStringBuilder connectionStringBuilder,
-        string connectionOptionKey
-    ) {
-        return Convert.ToString(
-            connectionStringBuilder[ connectionOptionKey ],
-            CultureInfo.InvariantCulture
-        ) ?? string.Empty;
-    }
-
     private static void ThrowIfInvalid(List<string> errors) {
         if (errors.Count > 0) {
-            throw new InvalidOperationException(
-                $"Invalid MariaDB configuration. {string.Join(" ", errors)}"
-            );
+            throw new InvalidOperationException($"Invalid MariaDB configuration. {string.Join(" ", errors)}");
         }
     }
 }

@@ -5,6 +5,6 @@
 
   <ItemGroup>
     <PackageVersion Include="NLog.Web.AspNetCore" Version="6.1.4" />
-    <PackageVersion Include="MySqlConnector" Version="2.6.1" />
+    <PackageVersion Include="MySqlConnector" Version="2.6.2" />
   </ItemGroup>
 </Project>
