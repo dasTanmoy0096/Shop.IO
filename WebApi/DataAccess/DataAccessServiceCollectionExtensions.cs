@@ -5,6 +5,7 @@ using System.Data.Common;
 
 using DataAccess.Configuration;
 using DataAccess.Internals;
+using DataAccess.Transactions;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -19,6 +20,7 @@ public static class DataAccessServiceCollectionExtensions {
                 .GetRequiredService<MariaDbDataSourceFactory>()
                 .Build()
         );
+        services.AddSingleton<DbConnectionExecutor>();
         services.AddHostedService<MariaDbDataSourceStartupGateHostedService>();
 
         return services;
