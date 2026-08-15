@@ -20,6 +20,11 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         bool RequiresNonEmptyValue
     );
 
+    private readonly record struct MariaDbExpectedConnectionOptionValue(
+        string ConfigurationKey,
+        string ExpectedValue
+    );
+
     private static readonly MariaDbConnectionOptionDefinition[] connectionOptionDefinitions =
     [
         new("Server", true, true),
@@ -73,6 +78,36 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         new("UseXaTransactions", true, true),
     ];
 
+    private static readonly MariaDbExpectedConnectionOptionValue[] expectedConnectionOptionValues =
+    [
+        new("LoadBalance", "RoundRobin"),
+        new("CertificateStoreLocation", "None"),
+        new("SkipCertificateRevocationCheck", bool.FalseString),
+        new("Pooling", bool.TrueString),
+        new("ConnectionLifeTime", "0"),
+        new("ConnectionReset", bool.TrueString),
+        new("DnsCheckInterval", "0"),
+        new("AllowLoadLocalInfile", bool.FalseString),
+        new("AllowPublicKeyRetrieval", bool.FalseString),
+        new("AllowUserVariables", bool.FalseString),
+        new("AllowZeroDateTime", bool.FalseString),
+        new("AutoEnlist", bool.FalseString),
+        new("ConvertZeroDateTime", bool.FalseString),
+        new("DateTimeKind", "Utc"),
+        new("GuidFormat", "None"),
+        new("IgnoreCommandTransaction", bool.FalseString),
+        new("InteractiveSession", bool.FalseString),
+        new("KeepAlive", "0"),
+        new("NoBackslashEscapes", bool.FalseString),
+        new("PersistSecurityInfo", bool.FalseString),
+        new("Pipelining", bool.TrueString),
+        new("ServerRedirectionMode", "Disabled"),
+        new("TreatTinyAsBoolean", bool.TrueString),
+        new("UseAffectedRows", bool.TrueString),
+        new("UseCompression", bool.FalseString),
+        new("UseXaTransactions", bool.FalseString),
+    ];
+
     private static readonly string[] prohibitedConfigurationKeys =
     [
         "PipeName",
@@ -81,6 +116,13 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         "CharacterSet",
         "IgnorePrepare",
         "OldGuids",
+    ];
+
+    private static readonly string[] expectedBlankConfigurationKeys =
+    [
+        "TlsVersion",
+        "TlsCipherSuites",
+        "ServerSPN",
     ];
 
     private readonly IHostEnvironment hostEnvironment;
@@ -223,6 +265,14 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         IConfiguration configuration,
         List<string> errors
     ) {
+        ValidateExpectedConnectionOptionValues(
+            connectionStringBuilder,
+            errors
+        );
+        ValidateExpectedBlankConfigurationValues(
+            configuration,
+            errors
+        );
         ValidateServerPlaceholder(
             connectionStringBuilder,
             errors
@@ -243,31 +293,8 @@ internal sealed class MariaDbConnectionConfigurationValidator {
             errors
         );
         ValidateCertificateConfiguration(
+            connectionStringBuilder,
             configuration,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "CertificateStoreLocation",
-            "None",
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "SkipCertificateRevocationCheck",
-            bool.FalseString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "Pooling",
-            bool.TrueString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "ConnectionReset",
-            bool.TrueString,
             errors
         );
         ValidatePositiveUInt32(
@@ -277,36 +304,6 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         );
         ValidatePoolBounds(
             connectionStringBuilder,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "AllowLoadLocalInfile",
-            bool.FalseString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "AllowPublicKeyRetrieval",
-            bool.FalseString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "AllowUserVariables",
-            bool.FalseString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "AllowZeroDateTime",
-            bool.FalseString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "AutoEnlist",
-            bool.FalseString,
             errors
         );
         ValidatePositiveUInt32(
@@ -319,83 +316,41 @@ internal sealed class MariaDbConnectionConfigurationValidator {
             "ConnectionTimeout",
             errors
         );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "ConvertZeroDateTime",
-            bool.FalseString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "DateTimeKind",
-            "Utc",
-            errors
-        );
         ValidatePositiveUInt32(
             connectionStringBuilder,
             "DefaultCommandTimeout",
             errors
         );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "GuidFormat",
-            "None",
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "IgnoreCommandTransaction",
-            bool.FalseString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "NoBackslashEscapes",
-            bool.FalseString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "PersistSecurityInfo",
-            bool.FalseString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "Pipelining",
-            bool.TrueString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "ServerRedirectionMode",
-            "Disabled",
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "TreatTinyAsBoolean",
-            bool.TrueString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "UseAffectedRows",
-            bool.TrueString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "UseCompression",
-            bool.FalseString,
-            errors
-        );
-        ValidateExpectedOptionValue(
-            connectionStringBuilder,
-            "UseXaTransactions",
-            bool.FalseString,
-            errors
-        );
+    }
+
+    private static void ValidateExpectedConnectionOptionValues(
+        MySqlConnectionStringBuilder connectionStringBuilder,
+        List<string> errors
+    ) {
+        foreach (MariaDbExpectedConnectionOptionValue expectedConnectionOptionValue in expectedConnectionOptionValues) {
+            ValidateExpectedOptionValue(
+                connectionStringBuilder,
+                expectedConnectionOptionValue.ConfigurationKey,
+                expectedConnectionOptionValue.ExpectedValue,
+                errors
+            );
+        }
+    }
+
+    private static void ValidateExpectedBlankConfigurationValues(
+        IConfiguration configuration,
+        List<string> errors
+    ) {
+        foreach (string expectedBlankConfigurationKey in expectedBlankConfigurationKeys) {
+            if (!string.IsNullOrWhiteSpace(
+                GetConfigurationValue(
+                    configuration,
+                    expectedBlankConfigurationKey
+                )
+            )) {
+                errors.Add($"{GetConnectionOptionConfigurationPath(expectedBlankConfigurationKey)} must be blank under the Shop.IO MariaDB configuration contract.");
+            }
+        }
     }
 
     private static void ValidateExpectedOptionValue(
@@ -527,70 +482,6 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         }
     }
 
-    private static void ValidateCertificateConfiguration(
-        IConfiguration configuration,
-        List<string> errors
-    ) {
-        string certificateFile = GetConfigurationValue(
-            configuration,
-            "CertificateFile"
-        );
-        string certificatePassword = GetConfigurationValue(
-            configuration,
-            "CertificatePassword"
-        );
-        string certificateThumbprint = GetConfigurationValue(
-            configuration,
-            "CertificateThumbprint"
-        );
-        string sslCert = GetConfigurationValue(
-            configuration,
-            "SslCert"
-        );
-        string sslKey = GetConfigurationValue(
-            configuration,
-            "SslKey"
-        );
-
-        if (!string.IsNullOrWhiteSpace(certificateFile)
-            && (!string.IsNullOrWhiteSpace(sslCert) || !string.IsNullOrWhiteSpace(sslKey))) {
-            errors.Add($"{GetConnectionOptionConfigurationPath("CertificateFile")}, {GetConnectionOptionConfigurationPath("SslCert")}, and {GetConnectionOptionConfigurationPath("SslKey")} must not configure both PKCS #12 and PEM client certificates.");
-        }
-
-        if (string.IsNullOrWhiteSpace(sslCert) != string.IsNullOrWhiteSpace(sslKey)) {
-            errors.Add($"{GetConnectionOptionConfigurationPath("SslCert")} and {GetConnectionOptionConfigurationPath("SslKey")} must be supplied together.");
-        }
-
-        if (!string.IsNullOrWhiteSpace(certificatePassword) && string.IsNullOrWhiteSpace(certificateFile)) {
-            errors.Add($"{GetConnectionOptionConfigurationPath("CertificatePassword")} requires CertificateFile.");
-        }
-
-        if (!string.IsNullOrWhiteSpace(certificateThumbprint)) {
-            errors.Add($"{GetConnectionOptionConfigurationPath("CertificateThumbprint")} requires a certificate-store topology, which is not cross-platform.");
-        }
-    }
-
-    private static string GetConfigurationValue(
-        IConfiguration configuration,
-        string connectionOptionKey
-    ) {
-        return configuration[ GetConnectionOptionConfigurationPath(connectionOptionKey) ] ?? string.Empty;
-    }
-
-    private static string GetConnectionOptionConfigurationPath(string connectionOptionKey) {
-        return $"{MariaDbConfigurationSectionPath}:{connectionOptionKey}";
-    }
-
-    private static string GetConnectionOptionValue(
-        MySqlConnectionStringBuilder connectionStringBuilder,
-        string connectionOptionKey
-    ) {
-        return Convert.ToString(
-            connectionStringBuilder[ connectionOptionKey ],
-            CultureInfo.InvariantCulture
-        ) ?? string.Empty;
-    }
-
     private static bool TryGetUInt32(
         MySqlConnectionStringBuilder connectionStringBuilder,
         string connectionOptionKey,
@@ -612,6 +503,116 @@ internal sealed class MariaDbConnectionConfigurationValidator {
             value = 0;
             return false;
         }
+    }
+
+    private static void ValidateCertificateConfiguration(
+        MySqlConnectionStringBuilder connectionStringBuilder,
+        IConfiguration configuration,
+        List<string> errors
+    ) {
+        string sslMode = GetConnectionOptionValue(
+            connectionStringBuilder,
+            "SslMode"
+        );
+        string certificateFile = GetConfigurationValue(
+            configuration,
+            "CertificateFile"
+        );
+        string certificatePassword = GetConfigurationValue(
+            configuration,
+            "CertificatePassword"
+        );
+        string certificateThumbprint = GetConfigurationValue(
+            configuration,
+            "CertificateThumbprint"
+        );
+        string sslCert = GetConfigurationValue(
+            configuration,
+            "SslCert"
+        );
+        string sslKey = GetConfigurationValue(
+            configuration,
+            "SslKey"
+        );
+        string sslCa = GetConfigurationValue(
+            configuration,
+            "SslCa"
+        );
+
+        bool hasClientCertificate = !string.IsNullOrWhiteSpace(certificateFile)
+            || !string.IsNullOrWhiteSpace(sslCert)
+            || !string.IsNullOrWhiteSpace(sslKey);
+
+        if (!string.IsNullOrWhiteSpace(certificateFile)
+            && (!string.IsNullOrWhiteSpace(sslCert) || !string.IsNullOrWhiteSpace(sslKey))) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("CertificateFile")}, {GetConnectionOptionConfigurationPath("SslCert")}, and {GetConnectionOptionConfigurationPath("SslKey")} must not configure both PKCS #12 and PEM client certificates.");
+        }
+
+        if (string.IsNullOrWhiteSpace(sslCert) != string.IsNullOrWhiteSpace(sslKey)) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("SslCert")} and {GetConnectionOptionConfigurationPath("SslKey")} must be supplied together.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(certificatePassword) && string.IsNullOrWhiteSpace(certificateFile)) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("CertificatePassword")} requires CertificateFile.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(certificateThumbprint)) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("CertificateThumbprint")} requires a certificate-store topology, which is not cross-platform.");
+        }
+
+        if (hasClientCertificate && IsTlsDisabled(sslMode)) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("CertificateFile")}, {GetConnectionOptionConfigurationPath("SslCert")}, and {GetConnectionOptionConfigurationPath("SslKey")} require an enabled TLS mode.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(sslCa)
+            && !IsCertificateValidatingTlsMode(sslMode)) {
+            errors.Add($"{GetConnectionOptionConfigurationPath("SslCa")} requires SslMode=VerifyCA or VerifyFull.");
+        }
+    }
+
+    private static bool IsTlsDisabled(string sslMode) {
+        return string.Equals(
+            sslMode,
+            "None",
+            StringComparison.OrdinalIgnoreCase
+        ) || string.Equals(
+            sslMode,
+            "Disabled",
+            StringComparison.OrdinalIgnoreCase
+        );
+    }
+
+    private static bool IsCertificateValidatingTlsMode(string sslMode) {
+        return string.Equals(
+            sslMode,
+            "VerifyCA",
+            StringComparison.OrdinalIgnoreCase
+        ) || string.Equals(
+            sslMode,
+            "VerifyFull",
+            StringComparison.OrdinalIgnoreCase
+        );
+    }
+
+    private static string GetConfigurationValue(
+        IConfiguration configuration,
+        string connectionOptionKey
+    ) {
+        return configuration[ GetConnectionOptionConfigurationPath(connectionOptionKey) ] ?? string.Empty;
+    }
+
+    private static string GetConnectionOptionConfigurationPath(string connectionOptionKey) {
+        return $"{MariaDbConfigurationSectionPath}:{connectionOptionKey}";
+    }
+
+    private static string GetConnectionOptionValue(
+        MySqlConnectionStringBuilder connectionStringBuilder,
+        string connectionOptionKey
+    ) {
+        return Convert.ToString(
+            connectionStringBuilder[ connectionOptionKey ],
+            CultureInfo.InvariantCulture
+        ) ?? string.Empty;
     }
 
     private static void ThrowIfInvalid(List<string> errors) {
