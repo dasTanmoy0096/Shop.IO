@@ -10,7 +10,7 @@ using DataAccess.Internals;
 internal sealed class DbConnectionExecutor {
     private readonly DbDataSource dataSource;
 
-    internal DbConnectionExecutor(DbDataSource dataSource) {
+    public DbConnectionExecutor(DbDataSource dataSource) {
         ArgumentNullException.ThrowIfNull(dataSource);
 
         this.dataSource = dataSource;

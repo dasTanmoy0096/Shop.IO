@@ -59,6 +59,17 @@ body {
 
   cursor: pointer;
 }
+/* TEMPORARY: Remove with the P3.07 readiness demonstration when the real P8 UI is implemented. */
+.temporary-readiness {
+  margin-top: 2rem;
+  padding-top: 2rem;
+
+  border-top: 1px solid #d0d0d0;
+}
+
+.temporary-readiness h2 {
+  font-size: 1.25rem;
+}
 
 .site-footer {
   text-align: center;
