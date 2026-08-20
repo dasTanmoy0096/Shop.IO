@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DataAccess;
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -14,8 +15,10 @@ using WebApi.Extensions;
 
 internal static class Program {
     private static async Task Main() {
-        WebApplicationBuilder builder = WebApplication.CreateBuilder();
+        WebApplicationBuilder builder = WebApplication.CreateSlimBuilder();
 
+        // CreateSlimBuilder requires an explicit opt-in for configuration-backed HTTPS endpoints.
+        builder.WebHost.UseKestrelHttpsConfiguration();
         builder.Logging.ClearProviders();
         builder.Host.UseNLog();
         builder.Services.AddDataAccess();
