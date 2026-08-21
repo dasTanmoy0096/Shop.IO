@@ -116,7 +116,7 @@ internal sealed class AccountPolicy {
                 NumberStyles.None,
                 CultureInfo.InvariantCulture,
                 out int value
-            )) {
+        )) {
             errors.Add($"{configurationPath} must be an integer value.");
             return 0;
         }
@@ -218,7 +218,7 @@ internal sealed class AccountPolicy {
                 candidatePassword,
                 accountUsername.Value,
                 StringComparison.OrdinalIgnoreCase
-            )) {
+        )) {
             return false;
         }
 

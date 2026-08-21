@@ -543,8 +543,7 @@ internal sealed class MariaDbConnectionConfigurationValidator {
             || !string.IsNullOrWhiteSpace(sslCert)
             || !string.IsNullOrWhiteSpace(sslKey);
 
-        if (!string.IsNullOrWhiteSpace(certificateFile)
-            && (!string.IsNullOrWhiteSpace(sslCert) || !string.IsNullOrWhiteSpace(sslKey))) {
+        if (!string.IsNullOrWhiteSpace(certificateFile) && (!string.IsNullOrWhiteSpace(sslCert) || !string.IsNullOrWhiteSpace(sslKey))) {
             errors.Add($"{GetConnectionOptionConfigurationPath("CertificateFile")}, {GetConnectionOptionConfigurationPath("SslCert")}, and {GetConnectionOptionConfigurationPath("SslKey")} must not configure both PKCS #12 and PEM client certificates.");
         }
 
@@ -564,8 +563,7 @@ internal sealed class MariaDbConnectionConfigurationValidator {
             errors.Add($"{GetConnectionOptionConfigurationPath("CertificateFile")}, {GetConnectionOptionConfigurationPath("SslCert")}, and {GetConnectionOptionConfigurationPath("SslKey")} require an enabled TLS mode.");
         }
 
-        if (!string.IsNullOrWhiteSpace(sslCa)
-            && !IsCertificateValidatingTlsMode(sslMode)) {
+        if (!string.IsNullOrWhiteSpace(sslCa) && !IsCertificateValidatingTlsMode(sslMode)) {
             errors.Add($"{GetConnectionOptionConfigurationPath("SslCa")} requires SslMode=VerifyCA or VerifyFull.");
         }
     }

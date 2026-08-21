@@ -3,3 +3,4 @@ bin/
 node_modules/
 WebApp/wwwroot/scripts/
 WebApp/wwwroot/importmap.js
+WebApi/WebApi/.shopio/data-protection-keys/

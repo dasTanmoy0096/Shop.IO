@@ -132,8 +132,7 @@ internal sealed class AccountService : IAccountService {
             normalizedPassword
         );
 
-        if (passwordVerificationResult == PasswordVerificationResult.Failed
-            || !account.IsActive) {
+        if (passwordVerificationResult == PasswordVerificationResult.Failed || !account.IsActive) {
             return new AccountCredentialVerificationResult(
                 AccountCredentialVerificationStatus.InvalidCredentials,
                 null
@@ -167,7 +166,8 @@ internal sealed class AccountService : IAccountService {
             new AuthenticatedAccount(
                 publicId,
                 account.Username,
-                securityStamp
+                securityStamp,
+                account.RoleCodes
             )
         );
     }
@@ -194,5 +194,35 @@ internal sealed class AccountService : IAccountService {
                 ? AccountSessionInvalidationStatus.Invalidated
                 : AccountSessionInvalidationStatus.AccountNotFound
         );
+    }
+
+    public async Task<AccountSessionValidationResult> ValidateSessionAsync(
+        AccountSessionValidationRequest request,
+        CancellationToken cancellationToken
+    ) {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (request.AccountPublicId == Guid.Empty || request.SecurityStamp == Guid.Empty) {
+            return new AccountSessionValidationResult(AccountSessionValidationStatus.Invalid);
+        }
+
+        try {
+            bool isValid = await accountRepository.IsSessionValidAsync(
+                request.AccountPublicId,
+                request.SecurityStamp,
+                cancellationToken
+            );
+
+            return new AccountSessionValidationResult(
+                isValid
+                    ? AccountSessionValidationStatus.Valid
+                    : AccountSessionValidationStatus.Invalid
+            );
+        } catch (DataAccessDatabaseException) {
+            return new AccountSessionValidationResult(AccountSessionValidationStatus.Unavailable);
+        } catch (System.Data.DataException) {
+            return new AccountSessionValidationResult(AccountSessionValidationStatus.Unavailable);
+        }
     }
 }

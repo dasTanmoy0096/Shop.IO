@@ -20,4 +20,9 @@ public interface IAccountService {
         AccountSessionInvalidationRequest request,
         CancellationToken cancellationToken
     );
+
+    Task<AccountSessionValidationResult> ValidateSessionAsync(
+        AccountSessionValidationRequest request,
+        CancellationToken cancellationToken
+    );
 }

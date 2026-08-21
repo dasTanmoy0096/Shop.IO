@@ -1,6 +1,7 @@
 namespace DataAccess.Repositories;
 
 using System;
+using System.Collections.Generic;
 
 internal sealed class AccountCredentialRecord {
     internal long AccountId { get; }
@@ -9,6 +10,7 @@ internal sealed class AccountCredentialRecord {
     internal string PasswordHash { get; }
     internal string SecurityStamp { get; }
     internal bool IsActive { get; }
+    internal IReadOnlyList<string> RoleCodes { get; }
 
     internal AccountCredentialRecord(
         long accountId,
@@ -16,13 +18,22 @@ internal sealed class AccountCredentialRecord {
         string username,
         string passwordHash,
         string securityStamp,
-        bool isActive
+        bool isActive,
+        IEnumerable<string> roleCodes
     ) {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(accountId);
         ArgumentException.ThrowIfNullOrWhiteSpace(publicId);
         ArgumentException.ThrowIfNullOrWhiteSpace(username);
         ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
         ArgumentException.ThrowIfNullOrWhiteSpace(securityStamp);
+        ArgumentNullException.ThrowIfNull(roleCodes);
+
+        List<string> copiedRoleCodes = [];
+
+        foreach (string roleCode in roleCodes) {
+            ArgumentException.ThrowIfNullOrWhiteSpace(roleCode);
+            copiedRoleCodes.Add(roleCode);
+        }
 
         AccountId = accountId;
         PublicId = publicId;
@@ -30,6 +41,7 @@ internal sealed class AccountCredentialRecord {
         PasswordHash = passwordHash;
         SecurityStamp = securityStamp;
         IsActive = isActive;
+        RoleCodes = copiedRoleCodes.AsReadOnly();
     }
 
     public override string ToString() {
