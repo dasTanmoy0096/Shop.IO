@@ -1,0 +1,3 @@
+namespace DataAccess.Transfers;
+
+public sealed record AccountSessionInvalidationResult(AccountSessionInvalidationStatus Status);

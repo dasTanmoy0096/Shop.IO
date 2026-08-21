@@ -1,0 +1,198 @@
+namespace DataAccess.Services;
+
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+using DataAccess.Configuration;
+using DataAccess.Internals;
+using DataAccess.Repositories;
+using DataAccess.Transfers;
+
+using Microsoft.AspNetCore.Identity;
+
+internal sealed class AccountService : IAccountService {
+    private readonly AccountPasswordHasher accountPasswordHasher;
+    private readonly AccountPolicy accountPolicy;
+    private readonly AccountRepository accountRepository;
+
+    public AccountService(
+        AccountPasswordHasher accountPasswordHasher,
+        AccountPolicy accountPolicy,
+        AccountRepository accountRepository
+    ) {
+        ArgumentNullException.ThrowIfNull(accountPasswordHasher);
+        ArgumentNullException.ThrowIfNull(accountPolicy);
+        ArgumentNullException.ThrowIfNull(accountRepository);
+
+        this.accountPasswordHasher = accountPasswordHasher;
+        this.accountPolicy = accountPolicy;
+        this.accountRepository = accountRepository;
+    }
+
+    public async Task<AccountRegistrationResult> RegisterAsync(
+        AccountRegistrationRequest request,
+        CancellationToken cancellationToken
+    ) {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!AccountPolicy.TryNormalizeUsername(
+            request.Username,
+            out AccountUsername? username
+        )) {
+            return new AccountRegistrationResult(
+                AccountRegistrationStatus.InvalidUsername,
+                null
+            );
+        }
+
+        if (!accountPolicy.TryNormalizePasswordForRegistration(
+            request.Password,
+            username,
+            out string normalizedPassword
+        )) {
+            return new AccountRegistrationResult(
+                AccountRegistrationStatus.InvalidPassword,
+                null
+            );
+        }
+
+        Guid publicId = Guid.NewGuid();
+        NewAccountRecord account = new(
+            publicId,
+            username,
+            accountPasswordHasher.HashPassword(normalizedPassword),
+            Guid.NewGuid()
+        );
+        bool wasCreated = await accountRepository.TryCreateAsync(
+            account,
+            cancellationToken
+        );
+
+        if (!wasCreated) {
+            return new AccountRegistrationResult(
+                AccountRegistrationStatus.UsernameUnavailable,
+                null
+            );
+        }
+
+        return new AccountRegistrationResult(
+            AccountRegistrationStatus.Created,
+            new AccountIdentity(
+                publicId,
+                username.Value
+            )
+        );
+    }
+
+    public async Task<AccountCredentialVerificationResult> VerifyCredentialsAsync(
+        AccountCredentialVerificationRequest request,
+        CancellationToken cancellationToken
+    ) {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!AccountPolicy.TryNormalizeUsername(
+            request.Username,
+            out AccountUsername? username
+        )) {
+            return new AccountCredentialVerificationResult(
+                AccountCredentialVerificationStatus.InvalidCredentials,
+                null
+            );
+        }
+
+        if (!AccountPolicy.TryNormalizePasswordForVerification(
+            request.Password,
+            out string normalizedPassword
+        )) {
+            return new AccountCredentialVerificationResult(
+                AccountCredentialVerificationStatus.InvalidCredentials,
+                null
+            );
+        }
+
+        AccountCredentialRecord? account = await accountRepository.FindByNormalizedUsernameAsync(
+            username.NormalizedValue,
+            cancellationToken
+        );
+
+        if (account is null) {
+            accountPasswordHasher.ConsumeMissingAccountAttempt(normalizedPassword);
+
+            return new AccountCredentialVerificationResult(
+                AccountCredentialVerificationStatus.InvalidCredentials,
+                null
+            );
+        }
+
+        PasswordVerificationResult passwordVerificationResult = accountPasswordHasher.VerifyPassword(
+            account.PasswordHash,
+            normalizedPassword
+        );
+
+        if (passwordVerificationResult == PasswordVerificationResult.Failed
+            || !account.IsActive) {
+            return new AccountCredentialVerificationResult(
+                AccountCredentialVerificationStatus.InvalidCredentials,
+                null
+            );
+        }
+
+        if (passwordVerificationResult == PasswordVerificationResult.SuccessRehashNeeded) {
+            string replacementPasswordHash = accountPasswordHasher.HashPassword(normalizedPassword);
+
+            _ = await accountRepository.TryUpgradePasswordHashAsync(
+                account,
+                replacementPasswordHash,
+                cancellationToken
+            );
+        }
+
+        if (!Guid.TryParseExact(
+            account.PublicId,
+            "D",
+            out Guid publicId
+        ) || !Guid.TryParseExact(
+            account.SecurityStamp,
+            "D",
+            out Guid securityStamp
+        )) {
+            throw new InvalidOperationException("The account credential record contains an invalid opaque identifier.");
+        }
+
+        return new AccountCredentialVerificationResult(
+            AccountCredentialVerificationStatus.Authenticated,
+            new AuthenticatedAccount(
+                publicId,
+                account.Username,
+                securityStamp
+            )
+        );
+    }
+
+    public async Task<AccountSessionInvalidationResult> InvalidateSessionsAsync(
+        AccountSessionInvalidationRequest request,
+        CancellationToken cancellationToken
+    ) {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (request.AccountPublicId == Guid.Empty) {
+            return new AccountSessionInvalidationResult(AccountSessionInvalidationStatus.AccountNotFound);
+        }
+
+        bool wasInvalidated = await accountRepository.TryInvalidateSessionsAsync(
+            request.AccountPublicId,
+            Guid.NewGuid(),
+            cancellationToken
+        );
+
+        return new AccountSessionInvalidationResult(
+            wasInvalidated
+                ? AccountSessionInvalidationStatus.Invalidated
+                : AccountSessionInvalidationStatus.AccountNotFound
+        );
+    }
+}
