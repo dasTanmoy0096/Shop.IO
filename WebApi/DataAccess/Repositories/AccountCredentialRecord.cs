@@ -5,27 +5,27 @@ using System.Collections.Generic;
 
 internal sealed class AccountCredentialRecord {
     internal long AccountId { get; }
-    internal string PublicId { get; }
+    internal Guid PublicId { get; }
     internal string Username { get; }
     internal string PasswordHash { get; }
-    internal string SecurityStamp { get; }
+    internal Guid SecurityStamp { get; }
     internal bool IsActive { get; }
     internal IReadOnlyList<string> RoleCodes { get; }
 
     internal AccountCredentialRecord(
         long accountId,
-        string publicId,
+        Guid publicId,
         string username,
         string passwordHash,
-        string securityStamp,
+        Guid securityStamp,
         bool isActive,
         IEnumerable<string> roleCodes
     ) {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(accountId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(publicId);
+        ArgumentOutOfRangeException.ThrowIfEqual(publicId, Guid.Empty);
         ArgumentException.ThrowIfNullOrWhiteSpace(username);
         ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
-        ArgumentException.ThrowIfNullOrWhiteSpace(securityStamp);
+        ArgumentOutOfRangeException.ThrowIfEqual(securityStamp, Guid.Empty);
         ArgumentNullException.ThrowIfNull(roleCodes);
 
         List<string> copiedRoleCodes = [];

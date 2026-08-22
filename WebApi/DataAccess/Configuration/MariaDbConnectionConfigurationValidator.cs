@@ -94,7 +94,7 @@ internal sealed class MariaDbConnectionConfigurationValidator {
         new("AutoEnlist", bool.FalseString),
         new("ConvertZeroDateTime", bool.FalseString),
         new("DateTimeKind", "Utc"),
-        new("GuidFormat", "None"),
+        new("GuidFormat", "Char36"),
         new("IgnoreCommandTransaction", bool.FalseString),
         new("InteractiveSession", bool.FalseString),
         new("KeepAlive", "0"),

@@ -39,7 +39,7 @@ internal static class DbDataReaderValueReader {
         int ordinal,
         string columnName,
         CancellationToken cancellationToken
-    ) {
+    ) where T : class {
         ValidateReadArguments(
             dataReader,
             ordinal,
@@ -52,7 +52,34 @@ internal static class DbDataReaderValueReader {
             ordinal,
             cancellationToken
         )) {
-            return default;
+            return null;
+        }
+
+        return await dataReader.GetFieldValueAsync<T>(
+            ordinal,
+            cancellationToken
+        );
+    }
+
+    internal static async Task<T?> ReadOptionalValueAsync<T>(
+        DbDataReader dataReader,
+        int ordinal,
+        string columnName,
+        CancellationToken cancellationToken
+    ) where T : struct {
+        ValidateReadArguments(
+            dataReader,
+            ordinal,
+            columnName
+        );
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (await dataReader.IsDBNullAsync(
+            ordinal,
+            cancellationToken
+        )) {
+            return null;
         }
 
         return await dataReader.GetFieldValueAsync<T>(

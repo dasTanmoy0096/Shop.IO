@@ -149,24 +149,12 @@ internal sealed class AccountService : IAccountService {
             );
         }
 
-        if (!Guid.TryParseExact(
-            account.PublicId,
-            "D",
-            out Guid publicId
-        ) || !Guid.TryParseExact(
-            account.SecurityStamp,
-            "D",
-            out Guid securityStamp
-        )) {
-            throw new InvalidOperationException("The account credential record contains an invalid opaque identifier.");
-        }
-
         return new AccountCredentialVerificationResult(
             AccountCredentialVerificationStatus.Authenticated,
             new AuthenticatedAccount(
-                publicId,
+                account.PublicId,
                 account.Username,
-                securityStamp,
+                account.SecurityStamp,
                 account.RoleCodes
             )
         );

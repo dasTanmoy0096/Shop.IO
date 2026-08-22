@@ -239,8 +239,8 @@ internal sealed class AccountRepository {
         DbParameterFactory.AddInputParameter(
             insertAccountCommand,
             "@publicId",
-            DbType.String,
-            account.PublicId.ToString("D")
+            DbType.Guid,
+            account.PublicId
         );
         DbParameterFactory.AddInputParameter(
             insertAccountCommand,
@@ -263,8 +263,8 @@ internal sealed class AccountRepository {
         DbParameterFactory.AddInputParameter(
             insertAccountCommand,
             "@securityStamp",
-            DbType.String,
-            account.SecurityStamp.ToString("D")
+            DbType.Guid,
+            account.SecurityStamp
         );
         DbParameterFactory.AddInputParameter(
             insertAccountCommand,
@@ -316,7 +316,7 @@ internal sealed class AccountRepository {
             "account_id",
             cancellationToken
         );
-        string publicId = await DbDataReaderValueReader.ReadRequiredAsync<string>(
+        Guid publicId = await DbDataReaderValueReader.ReadRequiredAsync<Guid>(
             dataReader,
             1,
             "public_id",
@@ -334,7 +334,7 @@ internal sealed class AccountRepository {
             "password_hash",
             cancellationToken
         );
-        string securityStamp = await DbDataReaderValueReader.ReadRequiredAsync<string>(
+        Guid securityStamp = await DbDataReaderValueReader.ReadRequiredAsync<Guid>(
             dataReader,
             4,
             "security_stamp",
@@ -388,14 +388,14 @@ internal sealed class AccountRepository {
         DbParameterFactory.AddInputParameter(
             command,
             "@publicId",
-            DbType.String,
-            publicId.ToString("D")
+            DbType.Guid,
+            publicId
         );
         DbParameterFactory.AddInputParameter(
             command,
             "@securityStamp",
-            DbType.String,
-            securityStamp.ToString("D")
+            DbType.Guid,
+            securityStamp
         );
         DbParameterFactory.AddInputParameter(
             command,
@@ -469,14 +469,14 @@ internal sealed class AccountRepository {
         DbParameterFactory.AddInputParameter(
             command,
             "@publicId",
-            DbType.String,
-            publicId.ToString("D")
+            DbType.Guid,
+            publicId
         );
         DbParameterFactory.AddInputParameter(
             command,
             "@securityStamp",
-            DbType.String,
-            securityStamp.ToString("D")
+            DbType.Guid,
+            securityStamp
         );
 
         int affectedRowCount = await DbCommandExecutor.ExecuteNonQueryAsync(
