@@ -23,6 +23,7 @@ internal static class Program {
         builder.Host.UseNLog();
         builder.Services.AddDataAccess();
         builder.Services.AddAccountAuthentication();
+        builder.Services.AddShopIoAuthorization();
 
         // TEMPORARY: Remove with the P3.07 readiness demonstration when P7 owns controller/CORS registration.
         if (builder.Environment.IsDevelopment()) {
@@ -39,6 +40,7 @@ internal static class Program {
         }
 
         app.UseAuthentication();
+        app.UseAuthorization();
 
         app.MapGet("/", () => "Hello World!");
 
