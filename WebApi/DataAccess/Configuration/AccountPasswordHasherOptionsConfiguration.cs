@@ -14,7 +14,7 @@ internal sealed class AccountPasswordHasherOptionsConfiguration : IConfigureOpti
         this.accountPolicy = accountPolicy;
     }
 
-    public void Configure(PasswordHasherOptions options) {
+    void IConfigureOptions<PasswordHasherOptions>.Configure(PasswordHasherOptions options) {
         ArgumentNullException.ThrowIfNull(options);
 
         options.CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV3;

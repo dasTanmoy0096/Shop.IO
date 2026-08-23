@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Text;
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
 internal sealed class AccountPolicy {
     private const string ConfigurationSectionPath = "DataAccess:Accounts";
@@ -18,18 +19,28 @@ internal sealed class AccountPolicy {
     private const string PasswordHashIterationCountConfigurationPath = $"{ConfigurationSectionPath}:PasswordHashIterationCount";
     private const string PasswordBlocklistConfigurationPath = $"{ConfigurationSectionPath}:PasswordBlocklist";
 
-    private const int RequiredUsernameMinimumLength = 3;
-    private const int RequiredUsernameMaximumLength = 64;
-    private const int RequiredPasswordMinimumLength = 15;
-    private const int RequiredPasswordMaximumLength = 128;
-    private const int RequiredPasswordHashIterationCount = 220000;
+    private const int MinimumUsernameLengthSupportedBySchema = 1;
+    private const int ProductionMinimumUsernameLength = 3;
+    private const int MaximumUsernameLengthSupportedBySchema = 64;
+    private const int DevelopmentMinimumPasswordLength = 1;
+    private const int ProductionMinimumPasswordLength = 15;
+    private const int MaximumPasswordLengthSupportedByApplication = 128;
+    private const int ProductionMinimumPasswordHashIterationCount = 220000;
 
     private readonly FrozenSet<string> passwordBlocklist;
 
+    private int UsernameMinimumLength { get; }
+    private int UsernameMaximumLength { get; }
+    private int PasswordMinimumLength { get; }
+    private int PasswordMaximumLength { get; }
     internal int PasswordHashIterationCount { get; }
 
-    public AccountPolicy(IConfiguration configuration) {
+    public AccountPolicy(
+        IConfiguration configuration,
+        IHostEnvironment hostEnvironment
+    ) {
         ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(hostEnvironment);
 
         List<string> errors = [];
         int usernameMinimumLength = ReadRequiredInteger(
@@ -62,34 +73,21 @@ internal sealed class AccountPolicy {
             errors
         );
 
-        ValidateFixedInteger(
-            UsernameMinimumLengthConfigurationPath,
+        ValidateUsernameLengthBounds(
             usernameMinimumLength,
-            RequiredUsernameMinimumLength,
-            errors
-        );
-        ValidateFixedInteger(
-            UsernameMaximumLengthConfigurationPath,
             usernameMaximumLength,
-            RequiredUsernameMaximumLength,
+            hostEnvironment.IsDevelopment(),
             errors
         );
-        ValidateFixedInteger(
-            PasswordMinimumLengthConfigurationPath,
+        ValidatePasswordLengthBounds(
             passwordMinimumLength,
-            RequiredPasswordMinimumLength,
-            errors
-        );
-        ValidateFixedInteger(
-            PasswordMaximumLengthConfigurationPath,
             passwordMaximumLength,
-            RequiredPasswordMaximumLength,
+            hostEnvironment.IsDevelopment(),
             errors
         );
-        ValidateFixedInteger(
-            PasswordHashIterationCountConfigurationPath,
+        ValidatePasswordHashIterationCount(
             passwordHashIterationCount,
-            RequiredPasswordHashIterationCount,
+            hostEnvironment.IsDevelopment(),
             errors
         );
 
@@ -100,6 +98,10 @@ internal sealed class AccountPolicy {
         ThrowIfInvalid(errors);
 
         passwordBlocklist = configuredPasswordBlocklist;
+        UsernameMinimumLength = usernameMinimumLength;
+        UsernameMaximumLength = usernameMaximumLength;
+        PasswordMinimumLength = passwordMinimumLength;
+        PasswordMaximumLength = passwordMaximumLength;
         PasswordHashIterationCount = passwordHashIterationCount;
     }
 
@@ -147,19 +149,82 @@ internal sealed class AccountPolicy {
         return values.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
     }
 
-    private static void ValidateFixedInteger(
-        string configurationPath,
-        int configuredValue,
-        int requiredValue,
+    private static void ValidateUsernameLengthBounds(
+        int minimumLength,
+        int maximumLength,
+        bool isDevelopment,
         List<string> errors
     ) {
-        if (configuredValue != requiredValue) {
-            errors.Add($"{configurationPath} must be {requiredValue}.");
+        int minimumAllowedLength = isDevelopment
+            ? MinimumUsernameLengthSupportedBySchema
+            : ProductionMinimumUsernameLength;
+
+        if (minimumLength < minimumAllowedLength
+            || maximumLength > MaximumUsernameLengthSupportedBySchema
+            || minimumLength > maximumLength
+        ) {
+            errors.Add($"{UsernameMinimumLengthConfigurationPath} and {UsernameMaximumLengthConfigurationPath} must define a range from {minimumAllowedLength} through {MaximumUsernameLengthSupportedBySchema}.");
         }
     }
 
-    internal static bool TryNormalizeUsername(
+    private static void ValidatePasswordLengthBounds(
+        int minimumLength,
+        int maximumLength,
+        bool isDevelopment,
+        List<string> errors
+    ) {
+        int minimumAllowedLength = isDevelopment
+            ? DevelopmentMinimumPasswordLength
+            : ProductionMinimumPasswordLength;
+
+        if (minimumLength < minimumAllowedLength
+            || maximumLength > MaximumPasswordLengthSupportedByApplication
+            || minimumLength > maximumLength
+        ) {
+            errors.Add($"{PasswordMinimumLengthConfigurationPath} and {PasswordMaximumLengthConfigurationPath} must define a range from {minimumAllowedLength} through {MaximumPasswordLengthSupportedByApplication}.");
+        }
+    }
+
+    private static void ValidatePasswordHashIterationCount(
+        int iterationCount,
+        bool isDevelopment,
+        List<string> errors
+    ) {
+        int minimumIterationCount = isDevelopment ? 1 : ProductionMinimumPasswordHashIterationCount;
+
+        if (iterationCount < minimumIterationCount) {
+            errors.Add($"{PasswordHashIterationCountConfigurationPath} must be at least {minimumIterationCount}.");
+        }
+    }
+
+    internal bool TryNormalizeUsernameForRegistration(
         string? value,
+        [NotNullWhen(true)] out AccountUsername? accountUsername
+    ) {
+        return TryNormalizeUsername(
+            value,
+            UsernameMinimumLength,
+            UsernameMaximumLength,
+            out accountUsername
+        );
+    }
+
+    internal static bool TryNormalizeUsernameForVerification(
+        string? value,
+        [NotNullWhen(true)] out AccountUsername? accountUsername
+    ) {
+        return TryNormalizeUsername(
+            value,
+            MinimumUsernameLengthSupportedBySchema,
+            MaximumUsernameLengthSupportedBySchema,
+            out accountUsername
+        );
+    }
+
+    private static bool TryNormalizeUsername(
+        string? value,
+        int minimumLength,
+        int maximumLength,
         [NotNullWhen(true)] out AccountUsername? accountUsername
     ) {
         accountUsername = null;
@@ -172,7 +237,7 @@ internal sealed class AccountPolicy {
             return false;
         }
 
-        if (normalizedValue.Length is < RequiredUsernameMinimumLength or > RequiredUsernameMaximumLength
+        if (normalizedValue.Length < minimumLength || normalizedValue.Length > maximumLength
             || !IsAsciiLetterOrDigit(normalizedValue[ 0 ])
             || !IsAsciiLetterOrDigit(normalizedValue[ ^1 ])) {
             return false;
@@ -210,8 +275,8 @@ internal sealed class AccountPolicy {
 
         int passwordLength = CountRunes(candidatePassword);
 
-        if (passwordLength < RequiredPasswordMinimumLength
-            || passwordLength > RequiredPasswordMaximumLength
+        if (passwordLength < PasswordMinimumLength
+            || passwordLength > PasswordMaximumLength
             || string.IsNullOrWhiteSpace(candidatePassword)
             || passwordBlocklist.Contains(candidatePassword)
             || string.Equals(
@@ -236,7 +301,7 @@ internal sealed class AccountPolicy {
         if (!TryNormalizePassword(
             value,
             out string candidatePassword
-        ) || CountRunes(candidatePassword) > RequiredPasswordMaximumLength) {
+        ) || CountRunes(candidatePassword) > MaximumPasswordLengthSupportedByApplication) {
             return false;
         }
 

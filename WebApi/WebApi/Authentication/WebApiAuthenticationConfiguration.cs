@@ -29,21 +29,14 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
     private const string DataProtectionCertificateFileConfigurationPath = $"{DataProtectionSectionPath}:CertificateFile";
     private const string DataProtectionCertificatePasswordConfigurationPath = $"{DataProtectionSectionPath}:CertificatePassword";
 
-    private const string RequiredCookieName = "__Host-ShopIO.Api.Auth";
-    private const string RequiredCookiePath = "/";
-    private const bool RequiredCookieHttpOnly = true;
-    private const SameSiteMode RequiredCookieSameSite = SameSiteMode.Strict;
-    private const CookieSecurePolicy RequiredCookieSecurePolicy = CookieSecurePolicy.Always;
-    private const bool RequiredCookieIsEssential = true;
-    private const int RequiredCookieLifetimeMinutes = 480;
-    private const bool RequiredCookiePersistent = false;
-    private const bool RequiredSlidingExpiration = false;
-    private const int RequiredDataProtectionKeyLifetimeDays = 90;
+    private const string HostCookiePrefix = "__Host-";
+    private const int MinimumDataProtectionKeyLifetimeDays = 7;
 
     private readonly X509Certificate2? keyEncryptionCertificate;
 
     internal string CookieName { get; }
     internal string CookiePath { get; }
+    internal string? CookieDomain { get; }
     internal bool CookieHttpOnly { get; }
     internal SameSiteMode CookieSameSite { get; }
     internal CookieSecurePolicy CookieSecurePolicy { get; }
@@ -74,7 +67,11 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
             CookiePathConfigurationPath,
             errors
         );
-        string? cookieDomain = configuration[ CookieDomainConfigurationPath ];
+        string? cookieDomain = ReadOptionalCookieDomain(
+            configuration,
+            CookieDomainConfigurationPath,
+            errors
+        );
         bool cookieHttpOnly = ReadRequiredBoolean(
             configuration,
             CookieHttpOnlyConfigurationPath,
@@ -128,69 +125,25 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
         string? dataProtectionCertificateFile = configuration[ DataProtectionCertificateFileConfigurationPath ];
         string? dataProtectionCertificatePassword = configuration[ DataProtectionCertificatePasswordConfigurationPath ];
 
-        ValidateFixedValue(
-            CookieNameConfigurationPath,
+        ValidateCookieSecurity(
+            hostEnvironment,
             cookieName,
-            RequiredCookieName,
-            errors
-        );
-        ValidateFixedValue(
-            CookiePathConfigurationPath,
             cookiePath,
-            RequiredCookiePath,
-            errors
-        );
-        ValidateEmptyValue(
-            CookieDomainConfigurationPath,
             cookieDomain,
-            errors
-        );
-        ValidateFixedValue(
-            CookieHttpOnlyConfigurationPath,
             cookieHttpOnly,
-            RequiredCookieHttpOnly,
-            errors
-        );
-        ValidateFixedValue(
-            CookieSameSiteConfigurationPath,
             cookieSameSite,
-            RequiredCookieSameSite,
-            errors
-        );
-        ValidateFixedValue(
-            CookieSecurePolicyConfigurationPath,
             cookieSecurePolicy,
-            RequiredCookieSecurePolicy,
             errors
         );
-        ValidateFixedValue(
-            CookieIsEssentialConfigurationPath,
-            cookieIsEssential,
-            RequiredCookieIsEssential,
-            errors
-        );
-        ValidateFixedValue(
+        ValidatePositiveInteger(
             CookieLifetimeMinutesConfigurationPath,
             cookieLifetimeMinutes,
-            RequiredCookieLifetimeMinutes,
             errors
         );
-        ValidateFixedValue(
-            CookiePersistentConfigurationPath,
-            cookiePersistent,
-            RequiredCookiePersistent,
-            errors
-        );
-        ValidateFixedValue(
-            SlidingExpirationConfigurationPath,
-            slidingExpiration,
-            RequiredSlidingExpiration,
-            errors
-        );
-        ValidateFixedValue(
+        ValidateMinimumInteger(
             DataProtectionKeyLifetimeDaysConfigurationPath,
             dataProtectionKeyLifetimeDays,
-            RequiredDataProtectionKeyLifetimeDays,
+            MinimumDataProtectionKeyLifetimeDays,
             errors
         );
 
@@ -206,6 +159,7 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
 
         CookieName = cookieName;
         CookiePath = cookiePath;
+        CookieDomain = cookieDomain;
         CookieHttpOnly = cookieHttpOnly;
         CookieSameSite = cookieSameSite;
         CookieSecurePolicy = cookieSecurePolicy;
@@ -226,7 +180,7 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
         );
     }
 
-    public void Dispose() {
+    void IDisposable.Dispose() {
         keyEncryptionCertificate?.Dispose();
     }
 
@@ -297,7 +251,7 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
                 configuredValue,
                 ignoreCase: false,
                 out TEnum value
-        )) {
+            ) || !Enum.IsDefined(value)) {
             errors.Add($"{configurationPath} must be a valid {typeof(TEnum).Name} value.");
             return default;
         }
@@ -305,28 +259,151 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
         return value;
     }
 
-    private static void ValidateFixedValue<T>(
+    private static string? ReadOptionalCookieDomain(
+        IConfiguration configuration,
         string configurationPath,
-        T configuredValue,
-        T requiredValue,
         List<string> errors
     ) {
-        if (!EqualityComparer<T>.Default.Equals(
-            configuredValue,
-            requiredValue
+        string? configuredValue = configuration[ configurationPath ];
+
+        if (configuredValue is null || configuredValue.Length == 0) {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(configuredValue)) {
+            errors.Add($"{configurationPath} must be empty or a valid host name.");
+            return null;
+        }
+
+        string hostName = configuredValue.StartsWith('.')
+            ? configuredValue[ 1.. ]
+            : configuredValue;
+
+        if (hostName.Length == 0 || Uri.CheckHostName(hostName) == UriHostNameType.Unknown) {
+            errors.Add($"{configurationPath} must be empty or a valid host name.");
+            return null;
+        }
+
+        return configuredValue;
+    }
+
+    private static void ValidateCookieSecurity(
+        IHostEnvironment hostEnvironment,
+        string cookieName,
+        string cookiePath,
+        string? cookieDomain,
+        bool cookieHttpOnly,
+        SameSiteMode cookieSameSite,
+        CookieSecurePolicy cookieSecurePolicy,
+        List<string> errors
+    ) {
+        bool usesHostPrefix = cookieName.StartsWith(
+            HostCookiePrefix,
+            StringComparison.Ordinal
+        );
+        bool requiresHostScope = !hostEnvironment.IsDevelopment() || usesHostPrefix;
+
+        if (!IsHttpToken(cookieName)) {
+            errors.Add($"{CookieNameConfigurationPath} must be a valid HTTP token.");
+        }
+
+        if (!cookiePath.StartsWith('/')) {
+            errors.Add($"{CookiePathConfigurationPath} must be an absolute path.");
+        }
+
+        if (!cookieHttpOnly) {
+            errors.Add($"{CookieHttpOnlyConfigurationPath} must be true.");
+        }
+
+        if (cookieSameSite == SameSiteMode.Unspecified) {
+            errors.Add($"{CookieSameSiteConfigurationPath} must be an explicit SameSite mode.");
+        }
+
+        if (cookieSameSite == SameSiteMode.None && cookieSecurePolicy != CookieSecurePolicy.Always) {
+            errors.Add($"{CookieSecurePolicyConfigurationPath} must be Always when {CookieSameSiteConfigurationPath} is None.");
+        }
+
+        if (!requiresHostScope) {
+            return;
+        }
+
+        if (!usesHostPrefix) {
+            errors.Add($"{CookieNameConfigurationPath} must start with {HostCookiePrefix} outside Development.");
+        }
+
+        if (!string.Equals(
+            cookiePath,
+            "/",
+            StringComparison.Ordinal
         )) {
-            errors.Add($"{configurationPath} must be {requiredValue}.");
+            errors.Add($"{CookiePathConfigurationPath} must be / for a host-only cookie.");
+        }
+
+        if (cookieDomain is not null) {
+            errors.Add($"{CookieDomainConfigurationPath} must be empty for a host-only cookie.");
+        }
+
+        if (cookieSecurePolicy != CookieSecurePolicy.Always) {
+            errors.Add($"{CookieSecurePolicyConfigurationPath} must be Always for a host-only cookie.");
         }
     }
 
-    private static void ValidateEmptyValue(
+    private static void ValidatePositiveInteger(
         string configurationPath,
-        string? configuredValue,
+        int configuredValue,
         List<string> errors
     ) {
-        if (configuredValue is null || configuredValue.Length != 0) {
-            errors.Add($"{configurationPath} must be explicitly empty.");
+        if (configuredValue <= 0) {
+            errors.Add($"{configurationPath} must be greater than zero.");
         }
+    }
+
+    private static void ValidateMinimumInteger(
+        string configurationPath,
+        int configuredValue,
+        int minimumValue,
+        List<string> errors
+    ) {
+        if (configuredValue < minimumValue) {
+            errors.Add($"{configurationPath} must be at least {minimumValue}.");
+        }
+    }
+
+    private static bool IsHttpToken(string value) {
+        if (value.Length == 0) {
+            return false;
+        }
+
+        foreach (char character in value) {
+            if ((character >= '0' && character <= '9')
+                || (character >= 'A' && character <= 'Z')
+                || (character >= 'a' && character <= 'z')) {
+                continue;
+            }
+
+            switch (character) {
+                case '!':
+                case '#':
+                case '$':
+                case '%':
+                case '&':
+                case '\'':
+                case '*':
+                case '+':
+                case '-':
+                case '.':
+                case '^':
+                case '_':
+                case '`':
+                case '|':
+                case '~':
+                    continue;
+                default:
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private static DirectoryInfo CreateDirectoryInfo(
@@ -370,9 +447,7 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
 
             return certificate;
         } catch {
-            throw new InvalidOperationException(
-                $"The WebApi authentication configuration is invalid: {DataProtectionCertificateFileConfigurationPath} could not be loaded."
-            );
+            throw new InvalidOperationException($"The WebApi authentication configuration is invalid: {DataProtectionCertificateFileConfigurationPath} could not be loaded.");
         }
     }
 
@@ -381,8 +456,6 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
             return;
         }
 
-        throw new InvalidOperationException(
-            $"The WebApi authentication configuration is invalid: {string.Join(" ", errors)}"
-        );
+        throw new InvalidOperationException($"The WebApi authentication configuration is invalid: {string.Join(" ", errors)}");
     }
 }

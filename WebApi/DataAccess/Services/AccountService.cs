@@ -30,14 +30,14 @@ internal sealed class AccountService : IAccountService {
         this.accountRepository = accountRepository;
     }
 
-    public async Task<AccountRegistrationResult> RegisterAsync(
+    async Task<AccountRegistrationResult> IAccountService.RegisterAsync(
         AccountRegistrationRequest request,
         CancellationToken cancellationToken
     ) {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!AccountPolicy.TryNormalizeUsername(
+        if (!accountPolicy.TryNormalizeUsernameForRegistration(
             request.Username,
             out AccountUsername? username
         )) {
@@ -86,14 +86,14 @@ internal sealed class AccountService : IAccountService {
         );
     }
 
-    public async Task<AccountCredentialVerificationResult> VerifyCredentialsAsync(
+    async Task<AccountCredentialVerificationResult> IAccountService.VerifyCredentialsAsync(
         AccountCredentialVerificationRequest request,
         CancellationToken cancellationToken
     ) {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!AccountPolicy.TryNormalizeUsername(
+        if (!AccountPolicy.TryNormalizeUsernameForVerification(
             request.Username,
             out AccountUsername? username
         )) {
@@ -160,7 +160,7 @@ internal sealed class AccountService : IAccountService {
         );
     }
 
-    public async Task<AccountSessionInvalidationResult> InvalidateSessionsAsync(
+    async Task<AccountSessionInvalidationResult> IAccountService.InvalidateSessionsAsync(
         AccountSessionInvalidationRequest request,
         CancellationToken cancellationToken
     ) {
@@ -184,7 +184,7 @@ internal sealed class AccountService : IAccountService {
         );
     }
 
-    public async Task<AccountSessionValidationResult> ValidateSessionAsync(
+    async Task<AccountSessionValidationResult> IAccountService.ValidateSessionAsync(
         AccountSessionValidationRequest request,
         CancellationToken cancellationToken
     ) {

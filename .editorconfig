@@ -56,6 +56,7 @@ csharp_preserve_single_line_statements = true
 csharp_using_directive_placement = inside_namespace:error
 
 [*.{cs,vb}]
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:error
 dotnet_separate_import_directive_groups = true
 dotnet_sort_system_directives_first = true
 file_header_template = unset
@@ -74,7 +75,6 @@ file_header_template = unset
 # dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:silent
 # dotnet_style_parentheses_in_other_operators = never_if_unnecessary:silent
 # dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:silent
-# dotnet_style_require_accessibility_modifiers = for_non_interface_members:silent
 # dotnet_style_coalesce_expression = true:suggestion
 # dotnet_style_collection_initializer = true:suggestion
 # dotnet_style_explicit_tuple_names = true:suggestion
@@ -278,4 +278,3 @@ file_header_template = unset
 # csharp_style_throw_expression = true:suggestion
 # csharp_style_unused_value_assignment_preference = discard_variable:suggestion
 # csharp_style_unused_value_expression_statement_preference = discard_variable:silent
-

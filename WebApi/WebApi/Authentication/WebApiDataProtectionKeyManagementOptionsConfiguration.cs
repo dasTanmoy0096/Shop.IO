@@ -23,7 +23,7 @@ internal sealed class WebApiDataProtectionKeyManagementOptionsConfiguration : IC
         this.loggerFactory = loggerFactory;
     }
 
-    public void Configure(KeyManagementOptions options) {
+    void IConfigureOptions<KeyManagementOptions>.Configure(KeyManagementOptions options) {
         ArgumentNullException.ThrowIfNull(options);
 
         options.XmlRepository = new FileSystemXmlRepository(

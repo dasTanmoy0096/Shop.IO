@@ -16,14 +16,24 @@ internal sealed class AccountCookieAuthenticationOptionsConfiguration : IConfigu
         this.authenticationConfiguration = authenticationConfiguration;
     }
 
-    public void Configure(CookieAuthenticationOptions options) {
-        Configure(
+    void IConfigureOptions<CookieAuthenticationOptions>.Configure(CookieAuthenticationOptions options) {
+        ConfigureCore(
             AccountAuthenticationDefaults.Scheme,
             options
         );
     }
 
-    public void Configure(
+    void IConfigureNamedOptions<CookieAuthenticationOptions>.Configure(
+        string? name,
+        CookieAuthenticationOptions options
+    ) {
+        ConfigureCore(
+            name,
+            options
+        );
+    }
+
+    private void ConfigureCore(
         string? name,
         CookieAuthenticationOptions options
     ) {
@@ -39,7 +49,7 @@ internal sealed class AccountCookieAuthenticationOptionsConfiguration : IConfigu
 
         options.Cookie.Name = authenticationConfiguration.CookieName;
         options.Cookie.Path = authenticationConfiguration.CookiePath;
-        options.Cookie.Domain = null;
+        options.Cookie.Domain = authenticationConfiguration.CookieDomain;
         options.Cookie.HttpOnly = authenticationConfiguration.CookieHttpOnly;
         options.Cookie.SameSite = authenticationConfiguration.CookieSameSite;
         options.Cookie.SecurePolicy = authenticationConfiguration.CookieSecurePolicy;

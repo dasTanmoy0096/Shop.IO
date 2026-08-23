@@ -18,7 +18,7 @@ internal sealed class DatabaseReadinessService : IDatabaseReadinessService {
         this.databaseReadinessRepository = databaseReadinessRepository;
     }
 
-    public async Task<DatabaseReadiness> CheckReadinessAsync(CancellationToken cancellationToken) {
+    async Task<DatabaseReadiness> IDatabaseReadinessService.CheckReadinessAsync(CancellationToken cancellationToken) {
         try {
             bool isReady = await databaseReadinessRepository.CheckReadinessAsync(cancellationToken);
 

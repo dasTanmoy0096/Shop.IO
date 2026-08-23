@@ -9,10 +9,8 @@ using Microsoft.Extensions.Logging;
 
 using NLog.Web;
 
-internal sealed class Program {
-    internal Program() { }
-
-    internal static async Task Main() {
+internal static class Program {
+    private static async Task Main() {
         WebApplicationBuilder builder = WebApplication.CreateSlimBuilder();
 
         // CreateSlimBuilder requires an explicit opt-in for configuration-backed HTTPS endpoints.

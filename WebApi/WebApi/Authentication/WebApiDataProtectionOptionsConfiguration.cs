@@ -16,7 +16,7 @@ internal sealed class WebApiDataProtectionOptionsConfiguration : IConfigureOptio
         this.authenticationConfiguration = authenticationConfiguration;
     }
 
-    public void Configure(DataProtectionOptions options) {
+    void IConfigureOptions<DataProtectionOptions>.Configure(DataProtectionOptions options) {
         ArgumentNullException.ThrowIfNull(options);
 
         options.ApplicationDiscriminator = authenticationConfiguration.DataProtectionApplicationName;
