@@ -9,6 +9,8 @@ using Microsoft.Extensions.Logging;
 
 using NLog.Web;
 
+using WebApp.Extensions;
+
 internal static class Program {
     private static async Task Main() {
         WebApplicationBuilder builder = WebApplication.CreateSlimBuilder();
@@ -23,9 +25,11 @@ internal static class Program {
 
         builder.Logging.ClearProviders();
         builder.Host.UseNLog();
+        builder.Services.AddShopIoRequestCorrelation();
 
         WebApplication app = builder.Build();
 
+        app.UseShopIoRequestCorrelation();
         app.UseDefaultFiles();
         app.UseStaticFiles();
         app.MapStaticAssets().ShortCircuit();

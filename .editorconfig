@@ -61,6 +61,19 @@ dotnet_separate_import_directive_groups = true
 dotnet_sort_system_directives_first = true
 file_header_template = unset
 
+# Nullable compiler diagnostics are build-breaking solution-wide through
+# Directory.Build.props. Keep the common null-flow diagnostics equally visible
+# as errors while editing.
+dotnet_diagnostic.CS8600.severity = error
+dotnet_diagnostic.CS8601.severity = error
+dotnet_diagnostic.CS8602.severity = error
+dotnet_diagnostic.CS8603.severity = error
+dotnet_diagnostic.CS8604.severity = error
+dotnet_diagnostic.CS8605.severity = error
+dotnet_diagnostic.CS8618.severity = error
+dotnet_diagnostic.CS8625.severity = error
+dotnet_diagnostic.CS8629.severity = error
+
 #### Non-formatting configurable knobs from uploaded .editorconfig (commented out) ####
 # These entries are intentionally inactive and are pushed to the bottom per request.
 

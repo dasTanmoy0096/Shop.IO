@@ -15,7 +15,6 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
     private const string CookieNameConfigurationPath = $"{AuthenticationSectionPath}:CookieName";
     private const string CookiePathConfigurationPath = $"{AuthenticationSectionPath}:CookiePath";
     private const string CookieDomainConfigurationPath = $"{AuthenticationSectionPath}:CookieDomain";
-    private const string CookieHttpOnlyConfigurationPath = $"{AuthenticationSectionPath}:CookieHttpOnly";
     private const string CookieSameSiteConfigurationPath = $"{AuthenticationSectionPath}:CookieSameSite";
     private const string CookieSecurePolicyConfigurationPath = $"{AuthenticationSectionPath}:CookieSecurePolicy";
     private const string CookieIsEssentialConfigurationPath = $"{AuthenticationSectionPath}:CookieIsEssential";
@@ -37,7 +36,6 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
     internal string CookieName { get; }
     internal string CookiePath { get; }
     internal string? CookieDomain { get; }
-    internal bool CookieHttpOnly { get; }
     internal SameSiteMode CookieSameSite { get; }
     internal CookieSecurePolicy CookieSecurePolicy { get; }
     internal bool CookieIsEssential { get; }
@@ -70,11 +68,6 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
         string? cookieDomain = ReadOptionalCookieDomain(
             configuration,
             CookieDomainConfigurationPath,
-            errors
-        );
-        bool cookieHttpOnly = ReadRequiredBoolean(
-            configuration,
-            CookieHttpOnlyConfigurationPath,
             errors
         );
         SameSiteMode cookieSameSite = ReadRequiredEnum<SameSiteMode>(
@@ -130,7 +123,6 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
             cookieName,
             cookiePath,
             cookieDomain,
-            cookieHttpOnly,
             cookieSameSite,
             cookieSecurePolicy,
             errors
@@ -160,7 +152,6 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
         CookieName = cookieName;
         CookiePath = cookiePath;
         CookieDomain = cookieDomain;
-        CookieHttpOnly = cookieHttpOnly;
         CookieSameSite = cookieSameSite;
         CookieSecurePolicy = cookieSecurePolicy;
         CookieIsEssential = cookieIsEssential;
@@ -292,7 +283,6 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
         string cookieName,
         string cookiePath,
         string? cookieDomain,
-        bool cookieHttpOnly,
         SameSiteMode cookieSameSite,
         CookieSecurePolicy cookieSecurePolicy,
         List<string> errors
@@ -309,10 +299,6 @@ internal sealed class WebApiAuthenticationConfiguration : IDisposable {
 
         if (!cookiePath.StartsWith('/')) {
             errors.Add($"{CookiePathConfigurationPath} must be an absolute path.");
-        }
-
-        if (!cookieHttpOnly) {
-            errors.Add($"{CookieHttpOnlyConfigurationPath} must be true.");
         }
 
         if (cookieSameSite == SameSiteMode.Unspecified) {

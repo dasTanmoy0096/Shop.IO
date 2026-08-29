@@ -25,6 +25,7 @@ internal static class Program {
         builder.Services.AddDataAccess();
         builder.Services.AddAccountAuthentication();
         builder.Services.AddShopIoAuthorization();
+        builder.Services.AddShopIoErrorHandling();
         builder.Services.AddShopIoRequestSecurity();
 
         // TEMPORARY: Remove with the P3.07 readiness demonstration when P7 owns controller registration.
@@ -34,6 +35,7 @@ internal static class Program {
 
         WebApplication app = builder.Build();
 
+        app.UseShopIoErrorHandling();
         app.UseRouting();
         app.UseCors(CorsPolicyNames.Browser);
         app.UseRateLimiter();

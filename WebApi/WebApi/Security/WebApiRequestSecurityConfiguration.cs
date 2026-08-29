@@ -22,21 +22,18 @@ internal sealed class WebApiRequestSecurityConfiguration {
     private const string AntiforgeryCookieNameConfigurationPath = $"{AntiforgerySectionPath}:CookieName";
     private const string AntiforgeryCookiePathConfigurationPath = $"{AntiforgerySectionPath}:CookiePath";
     private const string AntiforgeryCookieDomainConfigurationPath = $"{AntiforgerySectionPath}:CookieDomain";
-    private const string AntiforgeryCookieHttpOnlyConfigurationPath = $"{AntiforgerySectionPath}:CookieHttpOnly";
     private const string AntiforgeryCookieSameSiteConfigurationPath = $"{AntiforgerySectionPath}:CookieSameSite";
     private const string AntiforgeryCookieSecurePolicyConfigurationPath = $"{AntiforgerySectionPath}:CookieSecurePolicy";
     private const string AntiforgeryCookieIsEssentialConfigurationPath = $"{AntiforgerySectionPath}:CookieIsEssential";
     private const string AntiforgeryHeaderNameConfigurationPath = $"{AntiforgerySectionPath}:HeaderName";
     private const string AntiforgeryFormFieldNameConfigurationPath = $"{AntiforgerySectionPath}:FormFieldName";
     private const string AntiforgerySuppressReadingTokenFromFormBodyConfigurationPath = $"{AntiforgerySectionPath}:SuppressReadingTokenFromFormBody";
-    private const string AntiforgerySuppressXFrameOptionsHeaderConfigurationPath = $"{AntiforgerySectionPath}:SuppressXFrameOptionsHeader";
     private const string RateLimitingSectionPath = "Security:RateLimiting";
-    private const string RateLimitingRejectionStatusCodeConfigurationPath = $"{RateLimitingSectionPath}:RejectionStatusCode";
-    private const string RateLimitingRejectionMessageConfigurationPath = $"{RateLimitingSectionPath}:RejectionMessage";
+    private const string RateLimitingRejectionTitleConfigurationPath = $"{RateLimitingSectionPath}:Rejection:Title";
+    private const string RateLimitingRejectionDetailConfigurationPath = $"{RateLimitingSectionPath}:Rejection:Detail";
 
     private const string HostCookiePrefix = "__Host-";
-    private const bool RequiredAntiforgerySuppressXFrameOptionsHeader = false;
-    private const int RequiredRateLimitRejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    private const int MaximumClientMessageLength = 512;
 
     internal IReadOnlyList<string> CorsAllowedOrigins { get; }
     internal bool CorsAllowCredentials { get; }
@@ -47,16 +44,14 @@ internal sealed class WebApiRequestSecurityConfiguration {
     internal string AntiforgeryCookieName { get; }
     internal string AntiforgeryCookiePath { get; }
     internal string? AntiforgeryCookieDomain { get; }
-    internal bool AntiforgeryCookieHttpOnly { get; }
     internal SameSiteMode AntiforgeryCookieSameSite { get; }
     internal CookieSecurePolicy AntiforgeryCookieSecurePolicy { get; }
     internal bool AntiforgeryCookieIsEssential { get; }
     internal string AntiforgeryHeaderName { get; }
     internal string AntiforgeryFormFieldName { get; }
     internal bool AntiforgerySuppressReadingTokenFromFormBody { get; }
-    internal bool AntiforgerySuppressXFrameOptionsHeader { get; }
-    internal int RateLimitRejectionStatusCode { get; }
-    internal string RateLimitRejectionMessage { get; }
+    internal string RateLimitRejectionTitle { get; }
+    internal string RateLimitRejectionDetail { get; }
     internal WebApiRateLimitPolicyConfiguration AntiforgeryTokenRateLimit { get; }
     internal WebApiRateLimitPolicyConfiguration SignInRateLimit { get; }
     internal WebApiRateLimitPolicyConfiguration RegistrationRateLimit { get; }
@@ -116,11 +111,6 @@ internal sealed class WebApiRequestSecurityConfiguration {
             AntiforgeryCookieDomainConfigurationPath,
             errors
         );
-        bool antiforgeryCookieHttpOnly = ReadRequiredBoolean(
-            configuration,
-            AntiforgeryCookieHttpOnlyConfigurationPath,
-            errors
-        );
         SameSiteMode antiforgeryCookieSameSite = ReadRequiredEnum<SameSiteMode>(
             configuration,
             AntiforgeryCookieSameSiteConfigurationPath,
@@ -151,19 +141,14 @@ internal sealed class WebApiRequestSecurityConfiguration {
             AntiforgerySuppressReadingTokenFromFormBodyConfigurationPath,
             errors
         );
-        bool antiforgerySuppressXFrameOptionsHeader = ReadRequiredBoolean(
+        string rateLimitRejectionTitle = ReadRequiredClientMessage(
             configuration,
-            AntiforgerySuppressXFrameOptionsHeaderConfigurationPath,
+            RateLimitingRejectionTitleConfigurationPath,
             errors
         );
-        int rateLimitRejectionStatusCode = ReadRequiredInteger(
+        string rateLimitRejectionDetail = ReadRequiredClientMessage(
             configuration,
-            RateLimitingRejectionStatusCodeConfigurationPath,
-            errors
-        );
-        string rateLimitRejectionMessage = ReadRequiredString(
-            configuration,
-            RateLimitingRejectionMessageConfigurationPath,
+            RateLimitingRejectionDetailConfigurationPath,
             errors
         );
         WebApiRateLimitPolicyConfiguration antiforgeryTokenRateLimit = ReadRateLimitPolicy(
@@ -222,7 +207,6 @@ internal sealed class WebApiRequestSecurityConfiguration {
             antiforgeryCookieName,
             antiforgeryCookiePath,
             antiforgeryCookieDomain,
-            antiforgeryCookieHttpOnly,
             antiforgeryCookieSameSite,
             antiforgeryCookieSecurePolicy,
             errors
@@ -238,14 +222,6 @@ internal sealed class WebApiRequestSecurityConfiguration {
             errors
         );
 
-        if (antiforgerySuppressXFrameOptionsHeader != RequiredAntiforgerySuppressXFrameOptionsHeader) {
-            errors.Add($"{AntiforgerySuppressXFrameOptionsHeaderConfigurationPath} must be false.");
-        }
-
-        if (rateLimitRejectionStatusCode != RequiredRateLimitRejectionStatusCode) {
-            errors.Add($"{RateLimitingRejectionStatusCodeConfigurationPath} must be {RequiredRateLimitRejectionStatusCode}.");
-        }
-
         ThrowIfInvalid(errors);
 
         CorsAllowedOrigins = corsAllowedOrigins;
@@ -257,16 +233,14 @@ internal sealed class WebApiRequestSecurityConfiguration {
         AntiforgeryCookieName = antiforgeryCookieName;
         AntiforgeryCookiePath = antiforgeryCookiePath;
         AntiforgeryCookieDomain = antiforgeryCookieDomain;
-        AntiforgeryCookieHttpOnly = antiforgeryCookieHttpOnly;
         AntiforgeryCookieSameSite = antiforgeryCookieSameSite;
         AntiforgeryCookieSecurePolicy = antiforgeryCookieSecurePolicy;
         AntiforgeryCookieIsEssential = antiforgeryCookieIsEssential;
         AntiforgeryHeaderName = antiforgeryHeaderName;
         AntiforgeryFormFieldName = antiforgeryFormFieldName;
         AntiforgerySuppressReadingTokenFromFormBody = antiforgerySuppressReadingTokenFromFormBody;
-        AntiforgerySuppressXFrameOptionsHeader = antiforgerySuppressXFrameOptionsHeader;
-        RateLimitRejectionStatusCode = rateLimitRejectionStatusCode;
-        RateLimitRejectionMessage = rateLimitRejectionMessage;
+        RateLimitRejectionTitle = rateLimitRejectionTitle;
+        RateLimitRejectionDetail = rateLimitRejectionDetail;
         AntiforgeryTokenRateLimit = antiforgeryTokenRateLimit;
         SignInRateLimit = signInRateLimit;
         RegistrationRateLimit = registrationRateLimit;
@@ -305,11 +279,6 @@ internal sealed class WebApiRequestSecurityConfiguration {
             $"{policyConfigurationPath}:QueueProcessingOrder",
             errors
         );
-        bool autoReplenishment = ReadRequiredBoolean(
-            configuration,
-            $"{policyConfigurationPath}:AutoReplenishment",
-            errors
-        );
 
         ValidatePositiveInteger(
             $"{policyConfigurationPath}:PermitLimit",
@@ -332,17 +301,12 @@ internal sealed class WebApiRequestSecurityConfiguration {
             errors
         );
 
-        if (!autoReplenishment) {
-            errors.Add($"{policyConfigurationPath}:AutoReplenishment must be true.");
-        }
-
         return new WebApiRateLimitPolicyConfiguration(
             permitLimit,
             TimeSpan.FromSeconds(windowSeconds),
             segmentsPerWindow,
             queueLimit,
-            queueProcessingOrder,
-            autoReplenishment
+            queueProcessingOrder
         );
     }
 
@@ -369,6 +333,25 @@ internal sealed class WebApiRequestSecurityConfiguration {
         }
 
         return values.AsReadOnly();
+    }
+
+    private static string ReadRequiredClientMessage(
+        IConfiguration configuration,
+        string configurationPath,
+        List<string> errors
+    ) {
+        string configuredValue = ReadRequiredString(
+            configuration,
+            configurationPath,
+            errors
+        );
+
+        if (configuredValue.Length > MaximumClientMessageLength) {
+            errors.Add($"{configurationPath} must not exceed {MaximumClientMessageLength} characters.");
+            return string.Empty;
+        }
+
+        return configuredValue;
     }
 
     private static string ReadRequiredString(
@@ -618,7 +601,6 @@ internal sealed class WebApiRequestSecurityConfiguration {
         string cookieName,
         string cookiePath,
         string? cookieDomain,
-        bool cookieHttpOnly,
         SameSiteMode cookieSameSite,
         CookieSecurePolicy cookieSecurePolicy,
         List<string> errors
@@ -637,10 +619,6 @@ internal sealed class WebApiRequestSecurityConfiguration {
 
         if (!cookiePath.StartsWith('/')) {
             errors.Add($"{AntiforgeryCookiePathConfigurationPath} must be an absolute path.");
-        }
-
-        if (!cookieHttpOnly) {
-            errors.Add($"{AntiforgeryCookieHttpOnlyConfigurationPath} must be true.");
         }
 
         if (cookieSameSite == SameSiteMode.Unspecified) {

@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Options;
 
 internal sealed class AccountCookieAuthenticationOptionsConfiguration : IConfigureNamedOptions<CookieAuthenticationOptions> {
+    private const bool CookieHttpOnly = true;
+
     private readonly WebApiAuthenticationConfiguration authenticationConfiguration;
 
     public AccountCookieAuthenticationOptionsConfiguration(
@@ -50,7 +52,7 @@ internal sealed class AccountCookieAuthenticationOptionsConfiguration : IConfigu
         options.Cookie.Name = authenticationConfiguration.CookieName;
         options.Cookie.Path = authenticationConfiguration.CookiePath;
         options.Cookie.Domain = authenticationConfiguration.CookieDomain;
-        options.Cookie.HttpOnly = authenticationConfiguration.CookieHttpOnly;
+        options.Cookie.HttpOnly = CookieHttpOnly;
         options.Cookie.SameSite = authenticationConfiguration.CookieSameSite;
         options.Cookie.SecurePolicy = authenticationConfiguration.CookieSecurePolicy;
         options.Cookie.IsEssential = authenticationConfiguration.CookieIsEssential;
